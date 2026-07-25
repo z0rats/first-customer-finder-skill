@@ -22,8 +22,8 @@ Do not begin broad lead collection until this brief is specific enough to reject
 
 Search several buckets rather than repeating one query:
 
-1. **Explicit demand:** “looking for,” “recommend a tool,” “alternative to,” “does anything exist.”
-2. **Pain:** “takes hours,” “manual,” “frustrating,” “hate,” “difficult,” “keeps breaking.”
+1. **Explicit demand:** "looking for," "recommend a tool," "alternative to," "does anything exist."
+2. **Pain:** "takes hours," "manual," "frustrating," "hate," "difficult," "keeps breaking."
 3. **Workaround:** spreadsheets, copy-paste, virtual assistants, scripts, templates, or repeated manual steps.
 4. **Switching:** cancellation, migration, missing feature, pricing complaint, or competitor frustration.
 5. **Timing:** public launch, hiring, expansion, new workflow, regulation, integration, or process change relevant to the product.
@@ -39,7 +39,7 @@ Useful public sources include:
 - product reviews and app marketplace reviews
 - GitHub issues and public feature requests
 - public company pages, job posts, changelogs, or announcements
-- public “looking for a tool” posts and directories
+- public "looking for a tool" posts and directories
 
 Avoid private groups, gated communities, data brokers, scraped contact databases, and sources that prohibit access.
 
@@ -96,11 +96,11 @@ For each qualified prospect record:
 
 - displayed company, project, or public professional name
 - source title and URL
-- visible publication date or “date unavailable”
+- visible publication date or "date unavailable"
 - source type
 - concise pain or timing signal
 - observed evidence versus inference
 - score breakdown
 - freshness warning when relevant
 
-Use citations in the chat response whenever web research was performed.
+Cite sources in the chat response whenever web research was performed.

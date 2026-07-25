@@ -6,14 +6,14 @@ const path = require("path");
 
 function usage() {
   console.log(`
-Codex First Customer Finder Skill installer
+Claude First Customer Finder Skill installer
 
 Usage:
-  npx codex-first-customer-finder-skill
-  codex-first-customer-finder-skill --skills-dir ~/.codex/skills
+  npx claude-first-customer-finder-skill
+  claude-first-customer-finder-skill --skills-dir ~/.claude/skills
 
 Options:
-  --skills-dir PATH  Install into a custom Codex skills directory
+  --skills-dir PATH  Install into a custom Claude Code skills directory
   --help             Show this help
 `);
 }
@@ -46,8 +46,8 @@ function parseArgs(argv) {
 }
 
 function defaultSkillsDir() {
-  const codexHome = process.env.CODEX_HOME || path.join(os.homedir(), ".codex");
-  return path.join(codexHome, "skills");
+  const claudeHome = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), ".claude");
+  return path.join(claudeHome, "skills");
 }
 
 function copyDirectory(source, destination) {
@@ -79,8 +79,8 @@ function main() {
   console.log("Installed first-customer-finder skill.");
   console.log(`Location: ${destination}`);
   console.log("");
-  console.log("Restart Codex, then run:");
-  console.log("  Use $first-customer-finder to find ten potential first customers for https://example.com.");
+  console.log("Restart Claude Code, then run:");
+  console.log("  Find ten potential first customers for https://example.com.");
 }
 
 try {

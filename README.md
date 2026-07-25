@@ -1,6 +1,6 @@
-# Codex First Customer Finder Skill
+# Claude First Customer Finder Skill
 
-A Codex skill that turns a startup URL or product idea into a qualified shortlist of potential first customers using recent public pain, demand, and timing signals.
+A Claude Code skill that turns a startup URL or product idea into a qualified shortlist of potential first customers using recent public pain, demand, and timing signals.
 
 It defines the ideal customer profile, researches public sources, links the evidence behind every prospect, ranks fit and timing, drafts a source-based opener, and creates a polished HTML report. It never sends outreach automatically.
 
@@ -19,35 +19,35 @@ It defines the ideal customer profile, researches public sources, links the evid
 ## Installation
 
 ```bash
-npx --yes codex-first-customer-finder-skill@latest
+npx --yes claude-first-customer-finder-skill@latest
 ```
 
 This installs the skill into:
 
 ```text
-~/.codex/skills/first-customer-finder
+~/.claude/skills/first-customer-finder
 ```
 
-Restart Codex after installation.
+Restart Claude Code after installation.
 
 ## Usage
 
-Find the first ten potential customers:
+Claude Code activates the skill automatically when a request matches its description. Just ask naturally, for example:
 
 ```text
-Use $first-customer-finder to find ten evidence-backed potential first customers for https://example.com and create the final HTML report.
+Find ten evidence-backed potential first customers for https://example.com and create the final HTML report.
 ```
 
 Find design partners:
 
 ```text
-Use $first-customer-finder in design-partners mode for this startup: [URL]. Prioritize people publicly describing the problem and likely to give product feedback.
+Find first customers in design-partners mode for this startup: [URL]. Prioritize people publicly describing the problem and likely to give product feedback.
 ```
 
 B2B research:
 
 ```text
-Use $first-customer-finder in b2b mode for [URL]. Find public business triggers, qualify the relevant companies, and draft one opener per prospect without sending anything.
+Find first customers in b2b mode for [URL]. Find public business triggers, qualify the relevant companies, and draft one opener per prospect without sending anything.
 ```
 
 ## Output
@@ -79,12 +79,12 @@ Prospects are hypotheses based on public signals, not confirmed customers or gua
 ## Manual Installation
 
 ```bash
-git clone https://github.com/Kappaemme-git/codex-first-customer-finder-skill.git
-mkdir -p ~/.codex/skills
-cp -R codex-first-customer-finder-skill/first-customer-finder ~/.codex/skills/first-customer-finder
+git clone https://github.com/z0rats/claude-first-customer-finder-skill.git
+mkdir -p ~/.claude/skills
+cp -R claude-first-customer-finder-skill/first-customer-finder ~/.claude/skills/first-customer-finder
 ```
 
-Restart Codex after installation.
+Restart Claude Code after installation.
 
 ## License
 

@@ -1,6 +1,6 @@
 ---
 name: first-customer-finder
-description: Find and qualify evidence-backed potential first customers, early adopters, design partners, or beta users for a startup using recent public pain and buying signals. Use when Codex needs to analyze a product URL or idea, define an ideal customer profile, research public discussions and business pages, identify first-user prospects, rank lead fit and timing, prepare source-based outreach drafts, or create a shareable early-customer prospecting report without sending messages automatically.
+description: Find and qualify evidence-backed potential first customers, early adopters, design partners, or beta users for a startup using recent public pain and buying signals. Use when analyzing a product URL or idea, defining an ideal customer profile, researching public discussions and business pages, identifying first-user prospects, ranking lead fit and timing, preparing source-based outreach drafts, or creating a shareable early-customer prospecting report without sending messages automatically.
 ---
 
 # First Customer Finder
@@ -28,7 +28,7 @@ Search current public sources for:
 - migration, churn, or competitor-frustration signals
 - public company changes that create timing, such as hiring, launching, expanding, or adopting a relevant workflow
 
-Use multiple query angles and source types. Prefer original pages over search snippets. Record the source URL, source type, publication date when visible, and the exact evidence supporting qualification.
+Use multiple query angles and source types (web search, WebFetch on specific pages). Prefer original pages over search snippets. Record the source URL, source type, publication date when visible, and the exact evidence supporting qualification.
 
 ### 3. Research safely
 
@@ -51,7 +51,7 @@ Score each prospect using the bundled framework:
 
 Remove duplicates and weak matches. A prospect without a cited pain, need, or timing signal is only a speculative fit and must not appear in the primary shortlist.
 
-Never claim that a prospect is interested, has consented, or will buy. Label the output “potential customer based on public signals.”
+Never claim that a prospect is interested, has consented, or will buy. Label the output "potential customer based on public signals."
 
 ### 5. Draft outreach, never send it
 
@@ -75,10 +75,10 @@ Lead with the most actionable evidence. Use this order:
 Create a standalone HTML report unless the user explicitly requests chat-only output:
 
 1. Write structured JSON using `references/report-artifact.md`.
-2. Run `scripts/generate_report.py <analysis.json> <report.html>`.
-3. Save the report in the workspace `outputs/` directory.
+2. Run `python3 scripts/generate_report.py <analysis.json> <report.html>`.
+3. Save the report in the workspace `outputs/` directory (create it if missing).
 4. Verify prospect cards, source links, scores, patterns, outreach plan, and limitations.
-5. Return a clickable absolute file link in the final response so it opens from Codex.
+5. Return a clickable absolute file link (`file://...`) in the final response, or publish it as an Artifact if the user is working in an environment that supports that.
 
 ## Modes
 
@@ -89,7 +89,7 @@ Create a standalone HTML report unless the user explicitly requests chat-only ou
 - **b2b**: Prioritize companies, public business triggers, and relevant decision roles.
 - **community**: Prioritize public discussion and explicit request signals.
 
-Use `standard` by default.
+Use `standard` by default. State the mode explicitly in the request, e.g. "find first customers for https://example.com in deep mode".
 
 ## Quality bar
 
