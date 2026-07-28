@@ -7,7 +7,7 @@ description: Find and qualify evidence-backed potential first customers, early a
 
 Turn a startup URL or product description into a short, evidence-backed list of plausible first customers. Use public signals, preserve privacy, and distinguish a prospect from a confirmed buyer.
 
-Read [references/research-framework.md](references/research-framework.md) before researching or scoring prospects. Read [references/report-artifact.md](references/report-artifact.md) before creating the final report.
+Read [references/research-framework.md](references/research-framework.md) before researching or scoring prospects. Read [references/report-artifact.md](references/report-artifact.md) before creating the final report. Read [references/locale-playbooks.md](references/locale-playbooks.md) whenever the product's buyer, language, or stated geography is not English-language/US-EU-centric, and apply the matching playbook before building the search plan.
 
 ## Workflow
 
@@ -17,6 +17,7 @@ Read [references/research-framework.md](references/research-framework.md) before
 - Identify the product, outcome, buyer, user, price or buying motion, geography, and strongest use case.
 - Define one primary ICP, one adjacent ICP, pain triggers, positive signals, and disqualifiers.
 - Infer missing context when safe and label the inference. Ask one concise question only when ambiguity would materially change the search.
+- Determine the buyer's likely language and market. If it is not English-language/US-EU-centric (e.g., CIS, Russian- or Ukrainian-speaking), read [references/locale-playbooks.md](references/locale-playbooks.md) and use the matching playbook for the rest of the workflow.
 
 ### 2. Build a public-signal search plan
 
@@ -28,7 +29,7 @@ Search current public sources for:
 - migration, churn, or competitor-frustration signals
 - public company changes that create timing, such as hiring, launching, expanding, or adopting a relevant workflow
 
-Use multiple query angles and source types (web search, WebFetch on specific pages). Prefer original pages over search snippets. Record the source URL, source type, publication date when visible, and the exact evidence supporting qualification.
+Use the query buckets and source mix from the applicable locale playbook when one applies; otherwise use the base buckets above with general web search. Use multiple query angles and source types (web search, WebFetch on specific pages). Prefer original pages over search snippets. Record the source URL, source type, publication date when visible, and the exact evidence supporting qualification.
 
 ### 3. Research safely
 

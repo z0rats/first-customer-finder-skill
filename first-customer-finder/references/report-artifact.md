@@ -69,4 +69,6 @@ Return a clickable absolute `file://` link in the final response, or publish the
 
 Normal mode should contain up to ten qualified prospects. Every primary prospect must include a valid public source URL and a score from 0 to 100.
 
+Set `search_scope` to the sources actually searched, not the example above by default. When a locale playbook applied (see [locale-playbooks.md](locale-playbooks.md)), name the actual sources and language, e.g. `"Public Russian-language sources (Habr, VC.ru, hh.ru, Telegram), last 12 months"`.
+
 Use `opener` for a short source-grounded message with a concrete manual CTA. Avoid vague CTAs such as "would this be useful?" when a sharper routing ask is available.
