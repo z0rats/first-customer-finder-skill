@@ -15,7 +15,7 @@ Label the inference. If signals conflict (e.g., English product copy but a CIS-o
 
 ## CIS / Russian-speaking market
 
-Use this playbook when the buyer or product geography is Russia, Ukraine, Belarus, Kazakhstan, or another Russian- or Ukrainian-speaking market.
+Use this playbook when the buyer or product geography is Russia, Ukraine, Belarus, Kazakhstan, or another Russian-speaking market.
 
 ### Query buckets (Russian-language equivalents)
 
@@ -27,6 +27,8 @@ Search these alongside, not instead of, the English buckets if the audience is b
 4. **Switching:** "отказался от [конкурент]", "подорожал", "перестал устраивать", жалобы на цены/поддержку/блокировку.
 5. **Timing:** вакансии на hh.ru под смежную роль, анонсы запуска/расширения в Telegram-каналах компании, посты о найме или пивоте.
 
+Russian is heavily inflected — a single fixed phrase per bucket misses most matches. Vary case and person rather than searching one form only: "ищу" / "ищем" / "искали" / "ищет кто-нибудь", "задолбался" / "задолбались" / "задолбало", "аналог Notion" / "аналоги Notion" / "альтернатива Notion". Treat each bucket as a cluster of word forms, not a single string.
+
 ### Source mix
 
 - **Habr (habr.com)** — technical/product audience; strong for developer tools, SaaS, infra pain posts and comments.
@@ -36,7 +38,19 @@ Search these alongside, not instead of, the English buckets if the audience is b
 - **TenChat** — closest RU-market analog to LinkedIn-style professional posts; use for professional/business signals.
 - **VK public pages and communities** — company pages, industry groups; treat like public company pages, not private groups.
 - **Telegram public channels and chats** — browse via the public web preview (`t.me/s/<channel>`) or a public directory (e.g., TGStat, Telemetr) rather than trying to search inside the app; only cite channels/messages that are openly public, not invite-only groups.
-- **DOU.ua** — Ukraine-specific tech community; use instead of or alongside Habr when the buyer is Ukraine-based.
+- **Public company registries** — a strong, underused timing source. For Russia: `rusprofile.ru` or `list-org.com` (registration date, OKVED activity codes, leadership/ownership changes, active/liquidation status). A recent registration, a leadership change, or a newly added activity code relevant to the product is a legitimate timing signal — cite the registry page itself, not a summary.
+
+### Payment rails and product fit
+
+Stripe and PayPal do not operate inside Russia, which affects `product_fit` and reachability for any product whose buying motion assumes them (checkout, subscription billing, payouts). When qualifying a Russia-based prospect for a product billed through Stripe/PayPal, note this as a disqualifier or a material caveat rather than silently scoring fit as if global checkout worked normally. Local alternatives prospects may already use — useful for recognizing existing workarounds under the "workaround" query bucket — include ЮKassa, CloudPayments, Т-Банк (Tinkoff) Acquiring, and Robokassa. This constraint is Russia-specific; Ukraine, Kazakhstan, and Belarus each have their own separate payment-rail landscape and shouldn't be assumed to share it.
+
+### Compliance caution
+
+When the product/company is based in a jurisdiction with export controls or sanctions programs (e.g., US, EU, UK) and a prospect is Russia-based, sanctions or export-control restrictions may prohibit selling or providing services to that prospect, depending on the product category, the specific entity, and current regulations. This is not something to resolve automatically — flag it, don't decide it:
+
+- Do not silently draft outreach to a Russia-based prospect for a Western-owned product without surfacing this.
+- Set the prospect's `caution` field to note the jurisdiction mismatch and that sanctions/export-control screening should happen before any outreach.
+- This is a flag for the user to verify, not legal advice — never assert that a prospect is or isn't compliant to contact.
 
 ### Platform caveats
 
@@ -48,6 +62,7 @@ Search these alongside, not instead of, the English buckets if the audience is b
 
 - Set `search_scope` in the report JSON to reflect the actual scope searched, e.g. `"Public Russian-language sources (Habr, VC.ru, hh.ru, Telegram), last 12 months"` instead of the English-language default.
 - Draft the opener in the same language as the cited public source, not automatically in English.
+- Base the seven-day outreach plan's cadence on the prospect's local business hours, not the product's home timezone. Russia, Belarus, and most of Kazakhstan sit roughly UTC+3 to UTC+6 (Moscow Time and east of it); Ukraine is UTC+2/+3. Note the relevant timezone in the plan when it would otherwise default to a Western business-hours assumption.
 
 ## Adding another locale
 

@@ -19,6 +19,86 @@ DIMENSIONS = {
     "evidence_quality": "Evidence quality",
 }
 
+TOOLBAR_STYLES = """
+.toolbar{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);padding:16px;margin-bottom:16px}
+.toolbar-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.toolbar input[type=search],.toolbar select,.toolbar input[type=number]{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:9px 12px;font:600 13px inherit}
+.toolbar input[type=search]{flex:1 1 220px;min-width:160px}
+.toolbar select{flex:0 0 auto}
+.score-filter{display:flex;align-items:center;gap:8px;color:var(--muted);font:700 12px ui-monospace,monospace;white-space:nowrap}
+.score-filter input{width:64px}
+.toolbar button{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:9px 14px;font:700 12px inherit;cursor:pointer}
+.toolbar button:hover{color:var(--ink);border-color:var(--acid)}
+.toolbar-status{margin:12px 2px 0;color:var(--muted);font:700 11px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.06em}
+#noResults{color:var(--muted);padding:24px;text-align:center;border:1px dashed var(--line);border-radius:var(--radius);margin-bottom:76px}
+"""
+
+TOOLBAR_SCRIPT = """
+(function(){
+  var list = document.getElementById('prospectsList');
+  if(!list) return;
+  var cards = Array.prototype.slice.call(list.querySelectorAll('.prospect'));
+  var searchInput = document.getElementById('searchInput');
+  var stageFilter = document.getElementById('stageFilter');
+  var sourceFilter = document.getElementById('sourceFilter');
+  var minScore = document.getElementById('minScore');
+  var sortSelect = document.getElementById('sortSelect');
+  var resetBtn = document.getElementById('resetFilters');
+  var resultCount = document.getElementById('resultCount');
+  var noResults = document.getElementById('noResults');
+  var total = cards.length;
+  if(!searchInput || !stageFilter || !sourceFilter || !minScore || !sortSelect) return;
+
+  function sortCards(list){
+    var mode = sortSelect.value;
+    return list.slice().sort(function(a, b){
+      if(mode === 'name-asc') return a.dataset.name.localeCompare(b.dataset.name);
+      var sa = Number(a.dataset.score), sb = Number(b.dataset.score);
+      return mode === 'score-asc' ? sa - sb : sb - sa;
+    });
+  }
+
+  function apply(){
+    var q = searchInput.value.trim().toLowerCase();
+    var stage = stageFilter.value;
+    var source = sourceFilter.value;
+    var min = Number(minScore.value) || 0;
+    var visible = 0;
+    sortCards(cards).forEach(function(card, i){
+      var matches = Number(card.dataset.score) >= min
+        && (!stage || card.dataset.stage === stage)
+        && (!source || card.dataset.source === source)
+        && (!q || card.dataset.name.toLowerCase().indexOf(q) !== -1);
+      card.style.display = matches ? '' : 'none';
+      card.style.order = String(i);
+      if(matches){
+        visible += 1;
+        var rank = card.querySelector('.rank');
+        if(rank) rank.textContent = String(visible).padStart(2, '0');
+      }
+    });
+    if(resultCount) resultCount.textContent = 'Showing ' + visible + ' of ' + total + ' prospects';
+    if(noResults) noResults.style.display = visible ? 'none' : '';
+  }
+
+  [searchInput, stageFilter, sourceFilter, minScore, sortSelect].forEach(function(el){
+    el.addEventListener('input', apply);
+    el.addEventListener('change', apply);
+  });
+  if(resetBtn){
+    resetBtn.addEventListener('click', function(){
+      searchInput.value = '';
+      stageFilter.value = '';
+      sourceFilter.value = '';
+      minScore.value = '0';
+      sortSelect.value = 'score-desc';
+      apply();
+    });
+  }
+  apply();
+})();
+"""
+
 
 def esc(value: Any) -> str:
     return html.escape(str(value if value is not None else ""), quote=True)
@@ -63,17 +143,29 @@ def render_dimensions(data: dict[str, Any]) -> str:
     return "".join(rows)
 
 
+def render_filter_options(prospects: list[dict[str, Any]], key: str, default: str) -> str:
+    seen: dict[str, None] = {}
+    for prospect in prospects:
+        value = str(prospect.get(key) or default).strip()
+        if value:
+            seen.setdefault(value, None)
+    return "".join(f'<option value="{esc(v)}">{esc(v)}</option>' for v in sorted(seen))
+
+
 def render_prospect(prospect: dict[str, Any], index: int) -> str:
     score = clamp(prospect.get("score"))
     source = safe_url(prospect.get("source_url"))
+    name = esc(prospect.get("name", f"Prospect {index}"))
+    stage = esc(prospect.get("stage", "Potential fit"))
+    source_type = esc(prospect.get("source_type", "Public source"))
     return f"""
-    <article class="prospect reveal">
+    <article class="prospect reveal" data-score="{score}" data-stage="{stage}" data-source="{source_type}" data-name="{name}">
       <header class="prospect-head">
         <div class="rank">{index:02d}</div>
         <div class="identity">
           <span class="eyebrow">{esc(prospect.get('type', 'Public prospect'))}</span>
-          <h3>{esc(prospect.get('name', f'Prospect {index}'))}</h3>
-          <span class="stage {stage_class(prospect.get('stage'))}">{esc(prospect.get('stage', 'Potential fit'))}</span>
+          <h3>{name}</h3>
+          <span class="stage {stage_class(prospect.get('stage'))}">{stage}</span>
         </div>
         <div class="score" style="--score:{score}" aria-label="Fit score {score} out of 100"><strong>{score}</strong><small>/100</small></div>
       </header>
@@ -87,7 +179,7 @@ def render_prospect(prospect: dict[str, Any], index: int) -> str:
       <blockquote><span>Suggested opener</span>{esc(prospect.get('opener', ''))}</blockquote>
       <details>
         <summary>Evidence and score breakdown</summary>
-        <div class="evidence"><div><span>Evidence</span><p>{esc(prospect.get('evidence', ''))}</p></div><div><span>Source</span><p>{esc(prospect.get('source_type', 'Public source'))} · {esc(prospect.get('signal_date', 'Date unavailable'))}</p><a href="{source}" target="_blank" rel="noreferrer">{esc(prospect.get('source_title', 'Open original source'))} ↗</a></div></div>
+        <div class="evidence"><div><span>Evidence</span><p>{esc(prospect.get('evidence', ''))}</p></div><div><span>Source</span><p>{source_type} · {esc(prospect.get('signal_date', 'Date unavailable'))}</p><a href="{source}" target="_blank" rel="noreferrer">{esc(prospect.get('source_title', 'Open original source'))} ↗</a></div></div>
         <div class="metrics">{render_dimensions(prospect.get('dimensions') if isinstance(prospect.get('dimensions'), dict) else {})}</div>
       </details>
     </article>"""
@@ -110,6 +202,24 @@ def build_html(data: dict[str, Any]) -> str:
     prospect_html = "".join(render_prospect(x, i) for i, x in enumerate(prospects, 1))
     pattern_html = "".join(render_pattern(x, i) for i, x in enumerate(patterns, 1))
     product_url = safe_url(data.get("product_url"))
+    stage_options = render_filter_options(prospects, "stage", "Potential fit")
+    source_options = render_filter_options(prospects, "source_type", "Public source")
+    toolbar_html = f"""
+      <div class="toolbar" role="search" aria-label="Filter and sort prospects">
+        <div class="toolbar-row">
+          <input type="search" id="searchInput" placeholder="Search name or company…" aria-label="Search prospects">
+          <select id="stageFilter" aria-label="Filter by stage"><option value="">All stages</option>{stage_options}</select>
+          <select id="sourceFilter" aria-label="Filter by source type"><option value="">All sources</option>{source_options}</select>
+          <label class="score-filter">Min score <input type="number" id="minScore" min="0" max="100" value="0" aria-label="Minimum score"></label>
+          <select id="sortSelect" aria-label="Sort by">
+            <option value="score-desc">Score: high to low</option>
+            <option value="score-asc">Score: low to high</option>
+            <option value="name-asc">Name: A-Z</option>
+          </select>
+          <button type="button" id="resetFilters">Reset</button>
+        </div>
+        <p class="toolbar-status" id="resultCount" aria-live="polite"></p>
+      </div>"""
 
     return f"""<!doctype html>
 <html lang="en">
@@ -131,7 +241,8 @@ def build_html(data: dict[str, Any]) -> str:
     .patterns{{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:76px}}.pattern{{display:grid;grid-template-columns:42px 1fr auto;gap:15px;align-items:start;padding:20px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}}.pattern-num{{color:var(--acid);font:800 13px ui-monospace,monospace}}.pattern h3{{margin:0 0 5px}}.pattern p{{margin:0;color:var(--muted)}}.pattern>strong{{font-size:30px;color:var(--acid)}}
     .plan{{display:grid;grid-template-columns:.8fr 1.2fr;gap:28px;background:var(--acid);color:#111;padding:29px;border-radius:var(--radius);margin-bottom:30px}}.plan h2{{font-size:38px;line-height:1;letter-spacing:-.045em;margin:10px 0}}.plan-grid{{display:grid;grid-template-columns:1fr 1fr;gap:9px}}.plan-grid>div{{border:1px solid rgba(0,0,0,.24);border-radius:11px;padding:13px}}.plan-grid span{{display:block;font:750 10px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}}.plan-grid p{{margin:0}}.limits{{border:1px solid var(--line);border-radius:var(--radius);padding:24px;color:var(--muted);margin-bottom:60px}}.limits h2{{color:var(--ink);margin-top:0}}footer{{display:flex;justify-content:space-between;gap:20px;border-top:1px solid var(--line);padding:22px 0 40px;color:var(--muted);font-size:12px}}.reveal{{animation:rise .4s ease both}}@keyframes rise{{from{{opacity:0;transform:translateY(12px)}}}}
     @media(max-width:820px){{.shell{{width:min(100% - 24px,1180px)}}.hero,.plan{{grid-template-columns:1fr}}.hero{{padding-top:44px}}.hero-card{{transform:none}}.stats{{grid-template-columns:1fr 1fr}}.stats>div+div{{border-left:0;border-top:1px solid var(--line)}}.best{{grid-template-columns:1fr}}.prospect-head{{grid-template-columns:38px 1fr}}.score{{grid-column:1/-1}}.prospect-grid,.evidence,.patterns,.plan-grid{{grid-template-columns:1fr}}.meta .chip{{display:none}}}}
-    @media(prefers-reduced-motion:reduce){{*{{animation:none!important;transition:none!important;scroll-behavior:auto!important}}}}@media print{{body{{background:#fff;color:#111}}body:before,.top button{{display:none}}.shell{{width:100%}}.prospect,.pattern,.limits{{background:#fff;color:#111;break-inside:avoid}}.prospect-grid span,.signal span,.evidence span,blockquote span{{color:#444}}}}
+    @media(prefers-reduced-motion:reduce){{*{{animation:none!important;transition:none!important;scroll-behavior:auto!important}}}}@media print{{body{{background:#fff;color:#111}}body:before,.top button,.toolbar{{display:none}}.shell{{width:100%}}.prospect,.pattern,.limits{{background:#fff;color:#111;break-inside:avoid}}.prospect-grid span,.signal span,.evidence span,blockquote span{{color:#444}}}}
+    {TOOLBAR_STYLES}
   </style>
 </head>
 <body>
@@ -142,13 +253,14 @@ def build_html(data: dict[str, Any]) -> str:
       <section class="hero"><div><span class="eyebrow">Early-customer report · {esc(data.get('generated_at', ''))}</span><h1>{esc(data.get('title', 'First Customer Finder'))}</h1><p class="verdict">{esc(data.get('verdict', 'No verdict supplied.'))}</p></div><aside class="hero-card"><span>Qualified prospects</span><strong>{len(prospects)}</strong><p>Potential customers based on public signals.</p></aside></section>
       <section class="stats"><div><span>Product</span><strong><a href="{product_url}" target="_blank" rel="noreferrer">{esc(data.get('product', 'Not specified'))}</a></strong></div><div><span>Target customer</span><strong>{esc(data.get('target_customer', 'Not specified'))}</strong></div><div><span>High intent</span><strong>{high_intent}</strong></div><div><span>Average fit score</span><strong>{average}/100</strong></div></section>
       <section class="best"><div class="best-label">Highest-confidence prospect</div><div><h2>{esc(top.get('name', 'No qualified prospect'))}</h2><p>{esc(top.get('why_now', top.get('pain_signal', '')))}</p></div><strong>{clamp(top.get('score'))}</strong></section>
-      <section><header class="section-head"><h2>People with a reason<br>to care now.</h2><p>Every primary prospect is tied to a public pain, demand, or timing signal. Open the evidence before considering outreach.</p></header><div class="prospects">{prospect_html or '<p>No qualified prospects supplied.</p>'}</div></section>
+      <section><header class="section-head"><h2>People with a reason<br>to care now.</h2><p>Every primary prospect is tied to a public pain, demand, or timing signal. Open the evidence before considering outreach.</p></header>{toolbar_html if prospects else ''}<div class="prospects" id="prospectsList">{prospect_html or '<p>No qualified prospects supplied.</p>'}</div><p id="noResults" class="hidden" style="display:none">No prospects match these filters.</p></section>
       <section><header class="section-head"><h2>Signals that repeat.</h2><p>Patterns across prospects reveal the strongest positioning, workflow, and outreach angles.</p></header><div class="patterns">{pattern_html or '<p>No repeated patterns supplied.</p>'}</div></section>
       <section class="plan"><div><span class="eyebrow" style="color:#111">Seven-day manual plan</span><h2>{esc(plan.get('angle', 'Validate the pain before pitching the product.'))}</h2></div><div class="plan-grid"><div><span>First step</span><p>{esc(plan.get('first_step', ''))}</p></div><div><span>Follow-up</span><p>{esc(plan.get('follow_up', ''))}</p></div><div><span>Success signal</span><p>{esc(plan.get('success', ''))}</p></div><div><span>Research scope</span><p>{esc(data.get('search_scope', 'Not specified'))}</p></div></div></section>
       <section class="limits"><h2>Use this shortlist responsibly</h2><ul>{limits or '<li>These are potential customers inferred from public signals, not confirmed buyers.</li>'}</ul></section>
     </main>
     <footer><span>Generated by $first-customer-finder</span><span>Outreach is never sent automatically.</span></footer>
   </div>
+  <script>{TOOLBAR_SCRIPT}</script>
 </body>
 </html>"""
 

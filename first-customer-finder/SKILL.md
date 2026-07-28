@@ -17,7 +17,7 @@ Read [references/research-framework.md](references/research-framework.md) before
 - Identify the product, outcome, buyer, user, price or buying motion, geography, and strongest use case.
 - Define one primary ICP, one adjacent ICP, pain triggers, positive signals, and disqualifiers.
 - Infer missing context when safe and label the inference. Ask one concise question only when ambiguity would materially change the search.
-- Determine the buyer's likely language and market. If it is not English-language/US-EU-centric (e.g., CIS, Russian- or Ukrainian-speaking), read [references/locale-playbooks.md](references/locale-playbooks.md) and use the matching playbook for the rest of the workflow.
+- Determine the buyer's likely language and market. If it is not English-language/US-EU-centric (e.g., CIS, Russian-speaking), read [references/locale-playbooks.md](references/locale-playbooks.md) and use the matching playbook for the rest of the workflow.
 
 ### 2. Build a public-signal search plan
 
