@@ -1,22 +1,23 @@
 {
-  "name": "claude-first-customer-finder-skill",
+  "name": "first-customer-finder-skill",
   "version": "0.1.0",
   "description": "A Claude Code skill that finds evidence-backed potential first customers from recent public signals.",
   "license": "MIT",
-  "author": "Francesco Mistero",
+  "author": "z0rats",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/z0rats/claude-first-customer-finder-skill.git"
+    "url": "git+https://github.com/z0rats/first-customer-finder-skill.git"
   },
-  "homepage": "https://github.com/z0rats/claude-first-customer-finder-skill#readme",
+  "homepage": "https://github.com/z0rats/first-customer-finder-skill#readme",
   "bugs": {
-    "url": "https://github.com/z0rats/claude-first-customer-finder-skill/issues"
+    "url": "https://github.com/z0rats/first-customer-finder-skill/issues"
   },
   "bin": {
-    "claude-first-customer-finder-skill": "scripts/install.js"
+    "first-customer-finder-skill": "scripts/install.js"
   },
   "files": [
     "first-customer-finder",
+    ".claude-plugin",
     "scripts/install.js",
     "README.md",
     "LICENSE"

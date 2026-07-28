@@ -1,0 +1,13 @@
+{
+  "id": "z0rats",
+  "owner": {
+    "name": "z0rats"
+  },
+  "plugins": [
+    {
+      "name": "first-customer-finder",
+      "source": "./",
+      "description": "Find and qualify evidence-backed potential first customers for a startup from recent public signals — ICP analysis, verified pain/buying signals, scored shortlist, drafted outreach openers, locale playbooks for non-English markets, and a polished HTML report. Never sends messages."
+    }
+  ]
+}

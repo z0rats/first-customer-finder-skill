@@ -43,6 +43,12 @@ Useful public sources include:
 
 Avoid private groups, gated communities, data brokers, scraped contact databases, and sources that prohibit access.
 
+## Verification rule
+
+Qualify only from the original public page, fetched and read — not from a search snippet, an aggregator summary, or memory. Each signal that reaches the shortlist needs: source URL, source title, source type, visible publication date (or "date unavailable"), and a note of what was directly observed versus inferred.
+
+Some high-value sources block server-side fetching (Reddit, G2/TrustRadius, Cloudflare-fronted job boards, among others). Do not drop a candidate for that alone — verify through an alternate legitimate route: a browser session, an official API (e.g., HN Algolia for Hacker News), or the site's RSS feed. Third-party archives and cached copies can run months stale; prefer the live page and record which route verified it.
+
 ## Qualification score
 
 Score every dimension from 0 to 5:

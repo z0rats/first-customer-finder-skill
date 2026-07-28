@@ -1,0 +1,11 @@
+{
+  "name": "first-customer-finder",
+  "description": "Find and qualify evidence-backed potential first customers, early adopters, and design partners for a startup from recent public signals, with locale playbooks for non-English markets. Research-only: never sends outreach.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Francesco Mistero"
+  },
+  "homepage": "https://github.com/z0rats/first-customer-finder-skill",
+  "license": "MIT",
+  "skills": ["./first-customer-finder"]
+}

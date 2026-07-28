@@ -9,8 +9,8 @@ function usage() {
 Claude First Customer Finder Skill installer
 
 Usage:
-  npx claude-first-customer-finder-skill
-  claude-first-customer-finder-skill --skills-dir ~/.claude/skills
+  npx first-customer-finder-skill
+  first-customer-finder-skill --skills-dir ~/.claude/skills
 
 Options:
   --skills-dir PATH  Install into a custom Claude Code skills directory

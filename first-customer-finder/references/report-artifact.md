@@ -12,6 +12,8 @@ Return a clickable absolute `file://` link in the final response, or publish the
 
 ## JSON schema
 
+Fields are intentionally flat (`source_url`, `source_type`, `signal_date`, `pain_strength`, ...) rather than nested under a `source`/`scores` object. A model writing this JSON by hand is less likely to misplace or drop a field in a flat shape, and `generate_report.py` reads these exact keys — keep new fields flat too unless there's a concrete reason to nest.
+
 ```json
 {
   "title": "First Customer Finder",

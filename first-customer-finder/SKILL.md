@@ -29,7 +29,7 @@ Search current public sources for:
 - migration, churn, or competitor-frustration signals
 - public company changes that create timing, such as hiring, launching, expanding, or adopting a relevant workflow
 
-Use the query buckets and source mix from the applicable locale playbook when one applies; otherwise use the base buckets above with general web search. Use multiple query angles and source types (web search, WebFetch on specific pages). Prefer original pages over search snippets. Record the source URL, source type, publication date when visible, and the exact evidence supporting qualification.
+Use the query buckets and source mix from the applicable locale playbook when one applies; otherwise use the base buckets above with general web search. When subagent delegation is available, run each query bucket as its own parallel research subagent — one bucket per agent, each returning candidate signals with source URLs, dates, and a summary close to the original wording. Give every agent the product brief and ICP so it can reject weak matches at the source, and instruct it to fetch and quote what it cites; an agent may not return a URL it did not open. Work the buckets sequentially instead if the environment has no subagent support. Prefer original pages over search snippets. Record the source URL, source type, publication date when visible, and the exact evidence supporting qualification.
 
 ### 3. Research safely
 
@@ -40,7 +40,13 @@ Use the query buckets and source mix from the applicable locale playbook when on
 - Prefer companies, public professional profiles, public requests, and community posts relevant to the product.
 - Quote minimally and paraphrase by default. Link every material pain or timing signal.
 
-### 4. Qualify and deduplicate
+### 4. Verify before you qualify
+
+Fetch the original page for every candidate signal before it can enter the shortlist. A search snippet, an aggregator summary, or a subagent's unquoted paraphrase is not evidence. Confirm the page exists, the signal says what was claimed, and the date. Drop anything that fails this check.
+
+Some high-value sources block server-side fetching (e.g., Reddit, G2/TrustRadius, Cloudflare-fronted job boards). Do not drop a candidate for that reason alone — verify through an alternate legitimate route instead: a browser session, an official API (e.g., HN Algolia for Hacker News), or the site's RSS feed. Third-party archives can run months stale, so prefer the live page and note which route confirmed it. When a subagent already fetched and quoted a source, spot-check its work, and always re-verify the top three prospects yourself before they reach the report.
+
+### 5. Qualify and deduplicate
 
 Score each prospect using the bundled framework:
 
@@ -54,7 +60,7 @@ Remove duplicates and weak matches. A prospect without a cited pain, need, or ti
 
 Never claim that a prospect is interested, has consented, or will buy. Label the output "potential customer based on public signals."
 
-### 5. Draft outreach, never send it
+### 6. Draft outreach, never send it
 
 - Recommend the most natural public or professional channel already associated with the source. Prefer concrete official/public routes such as a company form, public business email, relevant public thread, or professional profile. If no direct public route is found, say so instead of guessing.
 - Identify the likely target role or function, not just the company name.
@@ -66,7 +72,7 @@ Never claim that a prospect is interested, has consented, or will buy. Label the
 - Avoid pretending to know the person, overstating familiarity, or mentioning unrelated personal details.
 - Do not send messages, submit forms, connect, follow, comment, or create CRM records unless the user separately requests and authorizes that action.
 
-### 6. Produce the report
+### 7. Produce the report
 
 Lead with the most actionable evidence. Use this order:
 
@@ -96,6 +102,14 @@ Create a standalone HTML report unless the user explicitly requests chat-only ou
 - **community**: Prioritize public discussion and explicit request signals.
 
 Use `standard` by default. State the mode explicitly in the request, e.g. "find first customers for https://example.com in deep mode".
+
+## Gotchas
+
+- **Fabrication is the failure mode that kills this skill.** A plausible prospect with a dead or mismatched link is worse than no prospect — step 4's verification is not optional, even in quick mode.
+- **Two-sided products** (e.g., marketplaces) return a mixed bag of both sides from research. Filter to the primary ICP before scoring; note the adjacent side under patterns instead of blending both into one shortlist.
+- **Old signals** can still qualify — an explicit request from 18 months ago is fine to include — but cut its timing score and print the date next to it so the reader can judge freshness themselves.
+- **Ten strong beats thirty generic.** If verification leaves you with four great prospects instead of ten mediocre ones, ship four and say why.
+- **Respect impatience.** If the user asks you to hurry or wrap up mid-run, switch to quick mode immediately: stop waiting on unfinished search buckets, verify and score what you already have, and ship the report with a note about which buckets were cut short.
 
 ## Quality bar
 
