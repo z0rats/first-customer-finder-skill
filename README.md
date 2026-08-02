@@ -109,6 +109,18 @@ Prospects are hypotheses based on public signals, not confirmed customers or gua
 - `b2b`: companies and public business triggers
 - `community`: explicit requests and public discussion signals
 
+## Development
+
+`scripts/generate_report.py` has no third-party dependencies, and neither do its tests. Run them with:
+
+```bash
+npm test
+# or directly:
+python3 -m unittest discover -s tests
+```
+
+The `SKILL.md` workflow itself isn't covered by automated tests — it's a behavior spec, not code. Validate changes to it by running the golden scenarios in [TESTING.md](TESTING.md) against a real Claude Code session.
+
 ## Manual Installation
 
 ```bash

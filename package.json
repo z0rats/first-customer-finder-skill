@@ -15,6 +15,9 @@
   "bin": {
     "first-customer-finder-skill": "scripts/install.js"
   },
+  "scripts": {
+    "test": "python3 -m unittest discover -s tests"
+  },
   "files": [
     "first-customer-finder",
     ".claude-plugin",
