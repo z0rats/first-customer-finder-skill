@@ -31,14 +31,22 @@ Russian is heavily inflected — a single fixed phrase per bucket misses most ma
 
 ### Source mix
 
+When the environment allows choosing a search engine, also try Yandex alongside the default: it indexes Habr comments, VK public pages, and Russian-language forums more completely than Google in some cases.
+
 - **Habr (habr.com)** — technical/product audience; strong for developer tools, SaaS, infra pain posts and comments.
 - **VC.ru** — startup/business audience; launch posts, business-model discussions, comment threads with pain signals.
 - **Pikabu** — broad consumer audience; useful for consumer-facing products, less reliable for B2B.
+- **Отзовик (otzovik.com) / iRecommend (irecommend.ru)** — consumer review sites; useful for B2C products and services, weak coverage for B2B tooling.
+- **Klerk.ru** — accountants and small-business owners; forum and articles surface pain around bookkeeping, reporting, and finance workflows well.
+- **Cossa.ru** — marketing/advertising industry publication and forum; comment threads are a good source for marketing-tech and adtech pain signals.
+- **dev.by** — Belarusian tech community, the closest analog to Habr for Belarus; use alongside Habr when the geography is Belarus specifically.
 - **hh.ru** — vacancies as a timing signal (a company hiring for a role your product supports is a trigger); job descriptions also reveal current workflow and tooling.
 - **TenChat** — closest RU-market analog to LinkedIn-style professional posts; use for professional/business signals.
 - **VK public pages and communities** — company pages, industry groups; treat like public company pages, not private groups.
-- **Telegram public channels and chats** — browse via the public web preview (`t.me/s/<channel>`) or a public directory (e.g., TGStat, Telemetr) rather than trying to search inside the app; only cite channels/messages that are openly public, not invite-only groups.
-- **Public company registries** — a strong, underused timing source. For Russia: `rusprofile.ru` or `list-org.com` (registration date, OKVED activity codes, leadership/ownership changes, active/liquidation status). A recent registration, a leadership change, or a newly added activity code relevant to the product is a legitimate timing signal — cite the registry page itself, not a summary.
+- **Telegram public channels and chats** — two-step process, since this content is not indexed by general web search:
+  1. **Discover** using a public directory's own keyword search (e.g., TGStat, Telemetr search) with the same word-form clusters as the query buckets — not just their channel-ranking or directory pages.
+  2. **Verify** by opening the actual post through the public web preview (`t.me/s/<channel>/<id>`) before citing it — directory search results are often summaries or stale copies, not the live message. Only cite channels/messages that are openly public, not invite-only groups.
+- **Public company registries** — a strong, underused timing source. For Russia: `rusprofile.ru` or `list-org.com` (registration date, OKVED activity codes, leadership/ownership changes, active/liquidation status). For Kazakhstan: `stat.gov.kz` business registry data or `egov.kz` business services. For Belarus: `egr.gov.by` (Unified State Register of Legal Entities and Individual Entrepreneurs). A recent registration, a leadership change, or a newly added activity code relevant to the product is a legitimate timing signal — cite the registry page itself, not a summary.
 
 ### Payment rails and product fit
 
@@ -58,11 +66,19 @@ When the product/company is based in a jurisdiction with export controls or sanc
 - **Telegram and VK content is often not indexed by general web search.** Do not assume a WebSearch query surfaces relevant channels or posts; fetch known public channels/communities directly, or use a public directory site to discover them first.
 - **Private/closed Telegram groups and VK communities remain off-limits**, same as any other private group under the base research-safety rules — do not join, request access, or use a member list to enrich contacts.
 
+### Regional business calendar
+
+CIS business calendars have long non-working stretches that a standard Mon–Fri cadence doesn't account for — most notably early January (New Year and Orthodox Christmas, commonly a one-to-two-week stretch) and early-to-mid May (Victory Day, with a second cluster around May 9). Exact non-working days shift every year — in Russia they're set by government decree and published for that specific year — so do not hardcode specific dates here or assume last year's calendar still applies.
+
+Instead, check the current date against the month, not a fixed date range: if the seven-day outreach window would fall in the first half of January or the first half of May, flag this explicitly in the plan rather than silently assuming standard business days. Either look up that year's official non-working-day calendar for the relevant country before proposing exact days, or state in the plan that the window may overlap a national holiday period and the cadence should be confirmed once the actual dates are known.
+
+Country calendars are not interchangeable within the CIS umbrella — Russia, Belarus, Kazakhstan, and Ukraine each publish their own non-working-day calendar and don't share exact dates. Match the calendar check to the prospect's country, not the product's or the user's.
+
 ### Reporting and outreach adjustments
 
 - Set `search_scope` in the report JSON to reflect the actual scope searched, e.g. `"Public Russian-language sources (Habr, VC.ru, hh.ru, Telegram), last 12 months"` instead of the English-language default.
 - Draft the opener in the same language as the cited public source, not automatically in English.
-- Base the seven-day outreach plan's cadence on the prospect's local business hours, not the product's home timezone. Russia, Belarus, and most of Kazakhstan sit roughly UTC+3 to UTC+6 (Moscow Time and east of it); Ukraine is UTC+2/+3. Note the relevant timezone in the plan when it would otherwise default to a Western business-hours assumption.
+- Base the seven-day outreach plan's cadence on the prospect's local business hours, not the product's home timezone. Russia, Belarus, and most of Kazakhstan sit roughly UTC+3 to UTC+6 (Moscow Time and east of it); Ukraine is UTC+2/+3. Note the relevant timezone in the plan when it would otherwise default to a Western business-hours assumption. Also check the regional business calendar above before proposing the plan's exact days.
 
 ## Adding another locale
 

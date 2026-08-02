@@ -49,6 +49,21 @@ Qualify only from the original public page, fetched and read — not from a sear
 
 Some high-value sources block server-side fetching (Reddit, G2/TrustRadius, Cloudflare-fronted job boards, among others). Do not drop a candidate for that alone — verify through an alternate legitimate route: a browser session, an official API (e.g., HN Algolia for Hacker News), or the site's RSS feed. Third-party archives and cached copies can run months stale; prefer the live page and record which route verified it.
 
+## Freshness window
+
+Default to a 12-month lookback across query buckets unless the user states otherwise or the mode implies a different window (e.g., a slower-moving `deep`-mode market may reasonably look further back). State whatever window was actually used in the report's `search_scope` field so the reader knows the cutoff, not just the sources searched.
+
+A signal older than the window can still qualify — an explicit request from 18 months ago is real evidence — but it must carry its `signal_date` and a visible freshness caveat rather than being included as if current. The generated HTML report flags any prospect whose signal is more than 12 months older than the report date automatically; write accurate dates so that flag is meaningful.
+
+## Deduplication
+
+Merge duplicates before scoring, not after — a duplicate that reaches scoring risks being counted as two separate prospects or inflating a pattern's count.
+
+1. **Canonicalize the URL** before comparing candidates: strip tracking parameters (`utm_*`, `ref`, `fbclid`, `gclid`, session IDs), normalize the scheme to `https`, drop trailing slashes, and treat `www.`, `m.`, and `amp.` subdomains of the same host as the same page.
+2. **Match by entity, not just URL.** The same company or person can surface through two different URLs — a forum thread and a comment on it, a company's own post and a news mention of it. Compare normalized display names (case-insensitive, legal suffixes like ООО/ИП/LLC/Inc stripped, whitespace collapsed) combined with the same source domain or platform; treat a match on both as the same entity.
+3. **Merge, don't discard.** When two candidates resolve to the same entity, keep the richer combination — the most complete evidence and the most recent date — and fold any additional signal in as extra evidence rather than dropping it. An entity with two independent corroborating signals is stronger evidence than either alone; this feeds directly into `confidence` below.
+4. Run this pass across all query-bucket results together, including everything separate subagents returned, before scoring — parallel buckets frequently surface the same entity from different angles.
+
 ## Qualification score
 
 Score every dimension from 0 to 5:
@@ -77,6 +92,22 @@ Interpretation:
 - **Below 50:** do not include in the primary shortlist
 
 An old explicit request can still be relevant, but reduce timing and label the date. A company that merely matches the industry without an evidenced trigger is not a qualified prospect.
+
+### Track near-misses
+
+Keep a short list of candidates that were seriously considered but did not qualify — scored below 50, failed verification, or were disqualified for a specific reason (wrong buyer, jurisdiction caution, dead link, duplicate of a stronger entry). This is not the full search log; it's the handful of candidates a reader would reasonably ask about ("what about the company that posted X?"). Record the entity name and a one-line reason. It goes into the report's `rejected` list (see [report-artifact.md](report-artifact.md)) — it costs little to track and materially increases confidence that the search was thorough rather than cherry-picked.
+
+## Confidence
+
+Score and confidence answer different questions: score is how good a fit this prospect is; confidence is how sure you are that the evidence is real, current, and attached to the right entity. A prospect can score 85 on thin evidence (one post that reads as plausible but couldn't be corroborated) or 85 on solid evidence (two independent public signals, both directly fetched) — flag the difference instead of collapsing it into one number.
+
+Set confidence to one of:
+
+- **High** — two or more independent public signals for the same entity (see Deduplication above), or a single signal from a highly reliable primary source (the company's own page, an official filing or registry) that was directly fetched and verified.
+- **Medium** — one directly verified signal from a single source; the default when nothing pushes it up or down.
+- **Low** — evidence relies on an unverifiable route (a directory summary that couldn't be corroborated on the live page), a stale cache/archive copy, or the entity attribution itself is uncertain (an anonymous account, a common name with no confirming detail).
+
+Confidence below High does not automatically exclude a prospect, but it must be visible in the report and should push the reader toward validating that specific prospect before outreach rather than treating it as ready.
 
 ## Prospect stages
 
@@ -118,6 +149,7 @@ For each qualified prospect record:
 - concise pain or timing signal
 - observed evidence versus inference
 - score breakdown
+- confidence (High/Medium/Low, see above)
 - freshness warning when relevant
 
 Cite sources in the chat response whenever web research was performed.

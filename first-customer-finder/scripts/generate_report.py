@@ -6,9 +6,12 @@ from __future__ import annotations
 import argparse
 import html
 import json
+from datetime import date
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
+
+STALE_THRESHOLD_DAYS = 365
 
 
 DIMENSIONS = {
@@ -133,6 +136,30 @@ def stage_class(stage: Any) -> str:
     return "cool"
 
 
+def confidence_class(confidence: Any) -> str:
+    value = str(confidence or "").lower()
+    if "high" in value:
+        return "hot"
+    if "low" in value:
+        return "cool"
+    return "warm"
+
+
+def parse_date(value: Any) -> date | None:
+    try:
+        return date.fromisoformat(str(value or "").strip()[:10])
+    except ValueError:
+        return None
+
+
+def is_stale(signal_date: Any, generated_at: Any) -> bool:
+    signal = parse_date(signal_date)
+    generated = parse_date(generated_at)
+    if signal is None or generated is None:
+        return False
+    return (generated - signal).days > STALE_THRESHOLD_DAYS
+
+
 def render_dimensions(data: dict[str, Any]) -> str:
     rows = []
     for key, label in DIMENSIONS.items():
@@ -152,12 +179,23 @@ def render_filter_options(prospects: list[dict[str, Any]], key: str, default: st
     return "".join(f'<option value="{esc(v)}">{esc(v)}</option>' for v in sorted(seen))
 
 
-def render_prospect(prospect: dict[str, Any], index: int) -> str:
+def render_prospect(prospect: dict[str, Any], index: int, generated_at: Any) -> str:
     score = clamp(prospect.get("score"))
     source = safe_url(prospect.get("source_url"))
     name = esc(prospect.get("name", f"Prospect {index}"))
     stage = esc(prospect.get("stage", "Potential fit"))
     source_type = esc(prospect.get("source_type", "Public source"))
+    confidence = str(prospect.get("confidence") or "").strip()
+    confidence_badge = (
+        f'<span class="stage {confidence_class(confidence)}">Confidence: {esc(confidence)}</span>'
+        if confidence
+        else ""
+    )
+    stale_badge = (
+        '<span class="stage stale">Stale · confirm relevance</span>'
+        if is_stale(prospect.get("signal_date"), generated_at)
+        else ""
+    )
     return f"""
     <article class="prospect reveal" data-score="{score}" data-stage="{stage}" data-source="{source_type}" data-name="{name}">
       <header class="prospect-head">
@@ -166,6 +204,8 @@ def render_prospect(prospect: dict[str, Any], index: int) -> str:
           <span class="eyebrow">{esc(prospect.get('type', 'Public prospect'))}</span>
           <h3>{name}</h3>
           <span class="stage {stage_class(prospect.get('stage'))}">{stage}</span>
+          {confidence_badge}
+          {stale_badge}
         </div>
         <div class="score" style="--score:{score}" aria-label="Fit score {score} out of 100"><strong>{score}</strong><small>/100</small></div>
       </header>
@@ -190,17 +230,27 @@ def render_pattern(pattern: dict[str, Any], index: int) -> str:
     <article class="pattern reveal"><span class="pattern-num">{index:02d}</span><div><h3>{esc(pattern.get('title', 'Repeated signal'))}</h3><p>{esc(pattern.get('insight', ''))}</p></div><strong>{clamp(pattern.get('count'), 999)}×</strong></article>"""
 
 
+def render_rejected(rejected: list[dict[str, Any]]) -> str:
+    return "".join(
+        f"<li><strong>{esc(item.get('name', 'Unnamed'))}</strong> — {esc(item.get('reason', ''))}</li>"
+        for item in rejected
+    )
+
+
 def build_html(data: dict[str, Any]) -> str:
     prospects = [x for x in items(data.get("prospects")) if isinstance(x, dict)]
     patterns = [x for x in items(data.get("patterns")) if isinstance(x, dict)]
+    rejected = [x for x in items(data.get("rejected")) if isinstance(x, dict)]
     scores = [clamp(x.get("score")) for x in prospects]
     high_intent = sum(1 for x in prospects if "high" in str(x.get("stage", "")).lower())
     average = round(sum(scores) / len(scores)) if scores else 0
     top = max(prospects, key=lambda x: clamp(x.get("score")), default={})
     plan = data.get("outreach_plan") if isinstance(data.get("outreach_plan"), dict) else {}
     limits = "".join(f"<li>{esc(x)}</li>" for x in items(data.get("limits")))
-    prospect_html = "".join(render_prospect(x, i) for i, x in enumerate(prospects, 1))
+    generated_at = data.get("generated_at", "")
+    prospect_html = "".join(render_prospect(x, i, generated_at) for i, x in enumerate(prospects, 1))
     pattern_html = "".join(render_pattern(x, i) for i, x in enumerate(patterns, 1))
+    rejected_html = render_rejected(rejected)
     product_url = safe_url(data.get("product_url"))
     stage_options = render_filter_options(prospects, "stage", "Potential fit")
     source_options = render_filter_options(prospects, "source_type", "Public source")
@@ -236,7 +286,7 @@ def build_html(data: dict[str, Any]) -> str:
     .stats{{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:28px}}.stats>div{{padding:18px;background:var(--panel)}}.stats>div+div{{border-left:1px solid var(--line)}}.stats span,.prospect-grid span,.signal span,.evidence span,blockquote span{{display:block;color:var(--muted);font:700 10px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}}.stats strong{{font-size:17px}}
     .best{{display:grid;grid-template-columns:180px 1fr auto;gap:24px;align-items:center;padding:25px;background:var(--orange);color:#1b0f09;border-radius:var(--radius);box-shadow:var(--shadow);margin:0 0 72px}}.best-label{{font:800 11px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.1em}}.best h2{{font-size:clamp(28px,4vw,46px);letter-spacing:-.045em;line-height:1;margin:0 0 8px}}.best p{{margin:0}}.best strong{{font-size:44px}}
     .section-head{{display:flex;justify-content:space-between;align-items:end;gap:24px;padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:18px}}.section-head h2{{font-size:clamp(34px,5vw,62px);line-height:.98;letter-spacing:-.055em;margin:0}}.section-head p{{color:var(--muted);max-width:470px;margin:0}}
-    .prospects{{display:grid;gap:16px;margin-bottom:76px}}.prospect{{background:linear-gradient(135deg,var(--panel),#0f1319);border:1px solid var(--line);border-radius:var(--radius);padding:25px;box-shadow:0 12px 38px rgba(0,0,0,.18)}}.prospect-head{{display:grid;grid-template-columns:54px 1fr 92px;gap:17px;align-items:start}}.rank{{font:850 24px ui-monospace,monospace;color:var(--acid);padding-top:8px}}.identity h3{{font-size:29px;letter-spacing:-.04em;margin:6px 0 10px}}.stage{{display:inline-block}}.stage.hot{{color:var(--orange);border-color:rgba(255,143,90,.5)}}.stage.warm{{color:var(--cyan);border-color:rgba(94,232,208,.45)}}.score{{--score:0;width:88px;height:88px;border-radius:50%;display:grid;place-content:center;text-align:center;background:radial-gradient(circle,var(--panel) 58%,transparent 60%),conic-gradient(var(--acid) calc(var(--score)*1%),var(--line) 0)}}.score strong{{font-size:26px;line-height:1}}.score small{{color:var(--muted)}}
+    .prospects{{display:grid;gap:16px;margin-bottom:76px}}.prospect{{background:linear-gradient(135deg,var(--panel),#0f1319);border:1px solid var(--line);border-radius:var(--radius);padding:25px;box-shadow:0 12px 38px rgba(0,0,0,.18)}}.prospect-head{{display:grid;grid-template-columns:54px 1fr 92px;gap:17px;align-items:start}}.rank{{font:850 24px ui-monospace,monospace;color:var(--acid);padding-top:8px}}.identity h3{{font-size:29px;letter-spacing:-.04em;margin:6px 0 10px}}.stage{{display:inline-block;margin-right:6px;margin-top:6px}}.stage.hot{{color:var(--orange);border-color:rgba(255,143,90,.5)}}.stage.warm{{color:var(--cyan);border-color:rgba(94,232,208,.45)}}.stage.stale{{color:#ff6b6b;border-color:rgba(255,107,107,.5)}}.score{{--score:0;width:88px;height:88px;border-radius:50%;display:grid;place-content:center;text-align:center;background:radial-gradient(circle,var(--panel) 58%,transparent 60%),conic-gradient(var(--acid) calc(var(--score)*1%),var(--line) 0)}}.score strong{{font-size:26px;line-height:1}}.score small{{color:var(--muted)}}
     .signal{{margin:21px 0 12px;padding:16px;background:var(--panel2);border-left:4px solid var(--acid)}}.signal p{{font-size:17px;margin:0}}.prospect-grid{{display:grid;grid-template-columns:1fr 1fr;gap:9px}}.prospect-grid>div,.evidence>div{{border:1px solid var(--line);border-radius:12px;padding:15px;background:rgba(255,255,255,.018)}}.prospect-grid p,.evidence p{{margin:0}}blockquote{{margin:12px 0 0;padding:16px;border:1px dashed rgba(217,255,99,.55);border-radius:12px;color:#eaf6c6}}details{{margin-top:10px}}summary{{cursor:pointer;color:var(--acid);font-weight:800;padding:10px 0}}.evidence{{display:grid;grid-template-columns:1fr 1fr;gap:9px}}.evidence a{{display:inline-block;color:var(--blue);margin-top:8px;word-break:break-word}}.metrics{{display:grid;gap:8px;margin-top:14px}}.metric{{display:grid;grid-template-columns:145px 1fr 40px;gap:12px;align-items:center;font-size:13px}}.track{{height:8px;background:var(--line);border-radius:8px;overflow:hidden}}.track i{{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--acid))}}
     .patterns{{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:76px}}.pattern{{display:grid;grid-template-columns:42px 1fr auto;gap:15px;align-items:start;padding:20px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}}.pattern-num{{color:var(--acid);font:800 13px ui-monospace,monospace}}.pattern h3{{margin:0 0 5px}}.pattern p{{margin:0;color:var(--muted)}}.pattern>strong{{font-size:30px;color:var(--acid)}}
     .plan{{display:grid;grid-template-columns:.8fr 1.2fr;gap:28px;background:var(--acid);color:#111;padding:29px;border-radius:var(--radius);margin-bottom:30px}}.plan h2{{font-size:38px;line-height:1;letter-spacing:-.045em;margin:10px 0}}.plan-grid{{display:grid;grid-template-columns:1fr 1fr;gap:9px}}.plan-grid>div{{border:1px solid rgba(0,0,0,.24);border-radius:11px;padding:13px}}.plan-grid span{{display:block;font:750 10px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}}.plan-grid p{{margin:0}}.limits{{border:1px solid var(--line);border-radius:var(--radius);padding:24px;color:var(--muted);margin-bottom:60px}}.limits h2{{color:var(--ink);margin-top:0}}footer{{display:flex;justify-content:space-between;gap:20px;border-top:1px solid var(--line);padding:22px 0 40px;color:var(--muted);font-size:12px}}.reveal{{animation:rise .4s ease both}}@keyframes rise{{from{{opacity:0;transform:translateY(12px)}}}}
@@ -255,6 +305,7 @@ def build_html(data: dict[str, Any]) -> str:
       <section class="best"><div class="best-label">Highest-confidence prospect</div><div><h2>{esc(top.get('name', 'No qualified prospect'))}</h2><p>{esc(top.get('why_now', top.get('pain_signal', '')))}</p></div><strong>{clamp(top.get('score'))}</strong></section>
       <section><header class="section-head"><h2>People with a reason<br>to care now.</h2><p>Every primary prospect is tied to a public pain, demand, or timing signal. Open the evidence before considering outreach.</p></header>{toolbar_html if prospects else ''}<div class="prospects" id="prospectsList">{prospect_html or '<p>No qualified prospects supplied.</p>'}</div><p id="noResults" class="hidden" style="display:none">No prospects match these filters.</p></section>
       <section><header class="section-head"><h2>Signals that repeat.</h2><p>Patterns across prospects reveal the strongest positioning, workflow, and outreach angles.</p></header><div class="patterns">{pattern_html or '<p>No repeated patterns supplied.</p>'}</div></section>
+      {f'<section class="limits"><h2>Considered, not qualified</h2><ul>{rejected_html}</ul></section>' if rejected_html else ''}
       <section class="plan"><div><span class="eyebrow" style="color:#111">Seven-day manual plan</span><h2>{esc(plan.get('angle', 'Validate the pain before pitching the product.'))}</h2></div><div class="plan-grid"><div><span>First step</span><p>{esc(plan.get('first_step', ''))}</p></div><div><span>Follow-up</span><p>{esc(plan.get('follow_up', ''))}</p></div><div><span>Success signal</span><p>{esc(plan.get('success', ''))}</p></div><div><span>Research scope</span><p>{esc(data.get('search_scope', 'Not specified'))}</p></div></div></section>
       <section class="limits"><h2>Use this shortlist responsibly</h2><ul>{limits or '<li>These are potential customers inferred from public signals, not confirmed buyers.</li>'}</ul></section>
     </main>

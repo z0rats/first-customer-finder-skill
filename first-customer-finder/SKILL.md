@@ -17,6 +17,7 @@ Read [references/research-framework.md](references/research-framework.md) before
 - Identify the product, outcome, buyer, user, price or buying motion, geography, and strongest use case.
 - Define one primary ICP, one adjacent ICP, pain triggers, positive signals, and disqualifiers.
 - Infer missing context when safe and label the inference. Ask one concise question only when ambiguity would materially change the search.
+- If the user supplies an exclusion list (companies, domains, or names already contacted), record it and exclude any matching entity from the search results and shortlist. Note in the report's `search_scope` or `limits` that an exclusion list was applied and roughly how many entities it covered.
 - Determine the buyer's likely language and market. If it is not English-language/US-EU-centric (e.g., CIS, Russian-speaking), read [references/locale-playbooks.md](references/locale-playbooks.md) and use the matching playbook for the rest of the workflow.
 
 ### 2. Build a public-signal search plan
@@ -48,6 +49,8 @@ Some high-value sources block server-side fetching (e.g., Reddit, G2/TrustRadius
 
 ### 5. Qualify and deduplicate
 
+Deduplicate first, using the canonicalization and entity-matching rules in `research-framework.md` — merge candidates that resolve to the same entity instead of scoring them as separate prospects.
+
 Score each prospect using the bundled framework:
 
 - pain strength
@@ -56,7 +59,9 @@ Score each prospect using the bundled framework:
 - public reachability
 - evidence quality
 
-Remove duplicates and weak matches. A prospect without a cited pain, need, or timing signal is only a speculative fit and must not appear in the primary shortlist.
+Then assign a `confidence` level (High/Medium/Low, see `research-framework.md`) — it is a separate axis from the score, not a substitute for it.
+
+Remove weak matches. A prospect without a cited pain, need, or timing signal is only a speculative fit and must not appear in the primary shortlist. Keep a short note of any candidate that was seriously considered but didn't qualify, with a one-line reason — it feeds the report's near-miss list.
 
 Never claim that a prospect is interested, has consented, or will buy. Label the output "potential customer based on public signals."
 
@@ -79,10 +84,11 @@ Lead with the most actionable evidence. Use this order:
 1. **Verdict** — whether the startup has reachable early-customer signals.
 2. **ICP** — buyer, job, trigger, and disqualifiers.
 3. **Top prospect** — strongest evidence-backed candidate and why now.
-4. **Prospect shortlist** — source, pain signal, fit score, stage, why now, channel, and opener with a concrete CTA.
+4. **Prospect shortlist** — source, pain signal, fit score, confidence, stage, why now, channel, and opener with a concrete CTA.
 5. **Repeated patterns** — pains and triggers appearing across prospects.
-6. **Seven-day outreach plan** — a manual, low-volume validation sequence.
-7. **Limits** — missing evidence and what must be confirmed through real conversations.
+6. **Considered, not qualified** — near-misses tracked in step 5, when any were worth recording.
+7. **Seven-day outreach plan** — a manual, low-volume validation sequence.
+8. **Limits** — missing evidence and what must be confirmed through real conversations.
 
 Create a standalone HTML report unless the user explicitly requests chat-only output:
 
@@ -102,6 +108,10 @@ Create a standalone HTML report unless the user explicitly requests chat-only ou
 - **community**: Prioritize public discussion and explicit request signals.
 
 Use `standard` by default. State the mode explicitly in the request, e.g. "find first customers for https://example.com in deep mode".
+
+## Follow-up requests
+
+After delivering a report, the user may ask to go deeper on one prospect ("expand on prospect 3", "dig into Example Gym") instead of rerunning the whole pipeline. Treat this as a scoped re-entry into steps 2–6 for that single entity only: run a focused search plan, verify any new signal per step 4, and update its score, confidence, and evidence rather than starting over. Regenerate the same report file (same `outputs/` path) with the enriched entry merged in, so the link the user already has stays valid, and state in the response which prospect was updated and what changed.
 
 ## Gotchas
 

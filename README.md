@@ -70,6 +70,18 @@ B2B research:
 Find first customers in b2b mode for [URL]. Find public business triggers, qualify the relevant companies, and draft one opener per prospect without sending anything.
 ```
 
+Skip companies you've already contacted:
+
+```text
+Find first customers for [URL]. Exclude these from the results: acme.com, Example Corp, contoso.io.
+```
+
+Go deeper on one prospect after the report is done:
+
+```text
+Expand on prospect 3 in the last report — find more evidence and update it.
+```
+
 ## Output
 
 The report includes:
@@ -78,12 +90,13 @@ The report includes:
 2. Primary ICP and disqualifiers
 3. Highest-confidence prospect
 4. Evidence-backed prospect shortlist
-5. Fit and timing scores
-6. Source links and signal dates
+5. Fit and timing scores, plus a confidence rating per prospect
+6. Source links and signal dates, with a stale-signal flag when a signal is over a year old
 7. Personalized outreach openers with concrete CTAs
 8. Repeated pain patterns
-9. Seven-day manual outreach plan
-10. Research limitations
+9. Notable candidates considered but not qualified, with the reason
+10. Seven-day manual outreach plan
+11. Research limitations
 
 Prospects are hypotheses based on public signals, not confirmed customers or guaranteed buyers.
 

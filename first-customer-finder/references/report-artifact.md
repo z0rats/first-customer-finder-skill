@@ -29,6 +29,7 @@ Fields are intentionally flat (`source_url`, `source_type`, `signal_date`, `pain
       "type": "Company",
       "stage": "Problem aware",
       "score": 82,
+      "confidence": "Medium",
       "pain_signal": "The owner publicly described manually following up on overdue memberships.",
       "evidence": "A recent public post describes the workflow and time cost.",
       "why_fit": "The product automates the exact reminder and payment step.",
@@ -56,6 +57,12 @@ Fields are intentionally flat (`source_url`, `source_type`, `signal_date`, `pain
       "insight": "Owners rely on spreadsheets and messaging apps after payments fail."
     }
   ],
+  "rejected": [
+    {
+      "name": "Other Gym Co",
+      "reason": "Explicit request found, but the account posting it looked like a bot and could not be corroborated elsewhere."
+    }
+  ],
   "outreach_plan": {
     "angle": "Offer a manual concierge test before asking for software adoption.",
     "first_step": "Contact the three highest-scoring prospects with one source-based question.",
@@ -74,3 +81,7 @@ Normal mode should contain up to ten qualified prospects. Every primary prospect
 Set `search_scope` to the sources actually searched, not the example above by default. When a locale playbook applied (see [locale-playbooks.md](locale-playbooks.md)), name the actual sources and language, e.g. `"Public Russian-language sources (Habr, VC.ru, hh.ru, Telegram), last 12 months"`.
 
 Use `opener` for a short source-grounded message with a concrete manual CTA. Avoid vague CTAs such as "would this be useful?" when a sharper routing ask is available.
+
+Set `confidence` to `"High"`, `"Medium"`, or `"Low"` per [research-framework.md](research-framework.md)'s Confidence section — it renders as a badge next to the stage badge. The generator also computes a "Stale" badge on its own by comparing `signal_date` to `generated_at`; there is no field for this, just keep both dates accurate.
+
+`rejected` is optional and short — a handful of seriously-considered candidates that didn't qualify, each with a one-line `reason`. Omit the key entirely if nothing rose to that level; don't pad it to look thorough.
