@@ -13,7 +13,9 @@ It defines the ideal customer profile, researches public sources, links the evid
 - Links every primary prospect to the original public source
 - Drafts respectful, source-based outreach openers with concrete manual CTAs
 - Recommends official/public contact routes without private enrichment
-- Creates a responsive standalone HTML report
+- Checks each candidate for counter-evidence (already solved, seller not buyer, wrong buyer) before qualifying it
+- Recomputes every score from its five dimensions so totals can't drift from the breakdown
+- Creates a responsive standalone HTML report, plus an optional spreadsheet-safe CSV
 - Keeps all outreach manual by default
 - Avoids private contact enrichment and sensitive personal data
 
@@ -76,10 +78,22 @@ Skip companies you've already contacted:
 Find first customers for [URL]. Exclude these from the results: acme.com, Example Corp, contoso.io.
 ```
 
+Get the shortlist as a CSV too:
+
+```text
+Find first customers for [URL] and also export the shortlist as a CSV.
+```
+
 Go deeper on one prospect after the report is done:
 
 ```text
 Expand on prospect 3 in the last report — find more evidence and update it.
+```
+
+Ask for more without repeats (the skill reads earlier reports' JSON from `outputs/`):
+
+```text
+Find more first customers for [URL] — skip everyone from the last report, and avoid enterprise buyers.
 ```
 
 ## Output
@@ -98,6 +112,8 @@ The report includes:
 10. Seven-day manual outreach plan
 11. Research limitations
 
+Each prospect can also carry the date it was checked, the target role (observed or inferred), and a verified public contact route.
+
 Prospects are hypotheses based on public signals, not confirmed customers or guaranteed buyers.
 
 ## Modes
@@ -111,12 +127,13 @@ Prospects are hypotheses based on public signals, not confirmed customers or gua
 
 ## Development
 
-`scripts/generate_report.py` has no third-party dependencies, and neither do its tests. Run them with:
+`scripts/generate_report.py` has no third-party dependencies, and neither do its tests. The installer is covered by Node's built-in test runner. Run everything with:
 
 ```bash
 npm test
-# or directly:
+# or separately:
 python3 -m unittest discover -s tests
+node --test tests/install.test.js
 ```
 
 The `SKILL.md` workflow itself isn't covered by automated tests — it's a behavior spec, not code. Validate changes to it by running the golden scenarios in [TESTING.md](TESTING.md) against a real Claude Code session.
@@ -133,7 +150,7 @@ Restart Claude Code after installation.
 
 ## Credits
 
-This repo started as a fork of [codex-first-customer-finder-skill](https://github.com/Kappaemme-git/codex-first-customer-finder-skill) by Francesco Mistero (the Codex-agent original) — see `LICENSE` for that project's copyright. Later revisions also borrowed structure, wording, and workflow ideas from [carolinacherry/claude-first-customer-finder-skill](https://github.com/carolinacherry/claude-first-customer-finder-skill) by Daniel An. This fork adds locale playbooks for non-English markets (starting with CIS/Russian-speaking) and other workflow changes on top of both.
+This repo started as a fork of [codex-first-customer-finder-skill](https://github.com/Kappaemme-git/codex-first-customer-finder-skill) by Francesco Mistero (the Codex-agent original) — see `LICENSE` for that project's copyright. Later revisions also borrowed structure, wording, and workflow ideas from [carolinacherry/claude-first-customer-finder-skill](https://github.com/carolinacherry/claude-first-customer-finder-skill) by Daniel An. Evidence-hygiene rules (separate checked date, counter-evidence check, contact-route verification, CSV formula escaping, safer installer) were adapted from the upstream Codex repo's v2 workflow; its local history/state machinery was deliberately not adopted. This fork adds locale playbooks for non-English markets (starting with CIS/Russian-speaking) and other workflow changes on top of both.
 
 ## License
 

@@ -1,6 +1,6 @@
 {
   "name": "first-customer-finder-skill",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A Claude Code skill that finds evidence-backed potential first customers from recent public signals.",
   "license": "MIT",
   "author": "z0rats",
@@ -16,14 +16,17 @@
     "first-customer-finder-skill": "scripts/install.js"
   },
   "scripts": {
-    "test": "python3 -m unittest discover -s tests"
+    "test": "python3 -m unittest discover -s tests && node --test tests/install.test.js",
+    "prepublishOnly": "npm test"
   },
   "files": [
     "first-customer-finder",
     ".claude-plugin",
     "scripts/install.js",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "!**/__pycache__/**",
+    "!**/*.pyc"
   ],
   "keywords": [
     "claude",

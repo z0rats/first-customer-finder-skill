@@ -28,7 +28,7 @@ Search several buckets rather than repeating one query:
 4. **Switching:** cancellation, migration, missing feature, pricing complaint, or competitor frustration.
 5. **Timing:** public launch, hiring, expansion, new workflow, regulation, integration, or process change relevant to the product.
 
-Adapt wording to the audience's language. Search the original public page and do not qualify from a search snippet alone.
+Adapt wording to the audience's language. Search engines only point to candidates; open the original public page and do not qualify from a search snippet alone.
 
 ### Source mix
 
@@ -49,11 +49,15 @@ Qualify only from the original public page, fetched and read — not from a sear
 
 Some high-value sources block server-side fetching (Reddit, G2/TrustRadius, Cloudflare-fronted job boards, among others). Do not drop a candidate for that alone — verify through an alternate legitimate route: a browser session, an official API (e.g., HN Algolia for Hacker News), or the site's RSS feed. Third-party archives and cached copies can run months stale; prefer the live page and record which route verified it.
 
+Record `signal_date` (when the source was published) separately from `checked_at` (when you inspected it). A recent check does not refresh an old signal. Attribute each signal to its actual author or company — a reply quoting someone else's complaint belongs to the person who wrote it.
+
 ## Freshness window
 
 Default to a 12-month lookback across query buckets unless the user states otherwise or the mode implies a different window (e.g., a slower-moving `deep`-mode market may reasonably look further back). State whatever window was actually used in the report's `search_scope` field so the reader knows the cutoff, not just the sources searched.
 
 A signal older than the window can still qualify — an explicit request from 18 months ago is real evidence — but it must carry its `signal_date` and a visible freshness caveat rather than being included as if current. The generated HTML report flags any prospect whose signal is more than 12 months older than the report date automatically; write accurate dates so that flag is meaningful.
+
+Evidence with no visible publication date can still qualify, but its timing dimension must be at most 2/5 unless a separate dated, cited signal supports it (then make that the primary source). The generator warns when this is violated.
 
 ## Deduplication
 
@@ -91,7 +95,20 @@ Interpretation:
 - **50–64:** plausible but missing a material signal
 - **Below 50:** do not include in the primary shortlist
 
-An old explicit request can still be relevant, but reduce timing and label the date. A company that merely matches the industry without an evidenced trigger is not a qualified prospect.
+Scores are prioritization judgments, not conversion probabilities. `generate_report.py` recomputes `score` from the five dimensions using exactly this formula whenever all five are present, so a hand-typed total cannot drift from its breakdown.
+
+An old explicit request can still be relevant, but reduce timing and label the date. With no verified, suitable public contact route, reachability must be at most 1/5. A company that merely matches the industry without an evidenced trigger is not a qualified prospect.
+
+### Look for counter-evidence
+
+Before a prospect is final, actively check whether the evidence cuts the other way:
+
+- the problem was already resolved (read the replies and any follow-up)
+- the author is selling a solution, not looking for one
+- the product lacks a capability the author explicitly needs
+- the buyer is outside the requested profile (size, region, role)
+
+Material counter-evidence goes into the prospect's `caution` or removes the candidate. A high numerical score never overrides contradictory evidence, and a requested quota never justifies keeping a weak match.
 
 ### Track near-misses
 
@@ -129,12 +146,14 @@ Good CTAs are specific: "Worth sending to whoever owns billing?", "Should I send
 
 For each prospect, make the outreach recommendation cover:
 
-- target role or function
-- official/public contact route
+- target role or function, labeled `observed` (stated in the source) or `inferred` (`role_basis`) — never an invented named decision-maker
+- official/public contact route, verified by opening it (`contact_url`); a generic home page is not a contact mechanism, and a missing route is reported as missing rather than guessed
 - primary CTA
 - likely objection or risk
 
 Translate the product into the prospect's language. Avoid implementation details, platform mechanics, or internal jargon unless the public source shows the prospect already cares about those details.
+
+A visible reply box or contact form is not permission to promote. Check the community's or site's rules before recommending it, and prefer the context-appropriate route (the relevant thread, a published business contact page, a public professional profile).
 
 Keep the opener under 90 words by default. Never claim the message was sent. Do not include private emails, phone numbers, personal addresses, family information, or sensitive traits.
 
@@ -144,7 +163,7 @@ For each qualified prospect record:
 
 - displayed company, project, or public professional name
 - source title and URL
-- visible publication date or "date unavailable"
+- visible publication date or "date unavailable", plus the date you checked it
 - source type
 - concise pain or timing signal
 - observed evidence versus inference

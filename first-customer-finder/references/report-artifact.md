@@ -8,7 +8,15 @@ Create a standalone HTML report from the final qualified prospect data. Use the 
 python3 scripts/generate_report.py analysis.json outputs/first-customer-finder-report.html
 ```
 
-Return a clickable absolute `file://` link in the final response, or publish the HTML as an Artifact if the current environment supports it. Keep the JSON in a work or temporary directory unless the user asks for raw data.
+Add `--csv outputs/first-customer-finder-prospects.csv` to also write the shortlist as a spreadsheet-safe CSV (UTF-8 with BOM so Excel reads Cyrillic correctly; values starting with `=`, `+`, `-`, or `@` are neutralized; unsafe URLs are blanked). It is a snapshot — editing it does not sync anywhere, and nothing is sent.
+
+Return a clickable absolute `file://` link in the final response, or publish the HTML as an Artifact if the current environment supports it. Save the analysis JSON next to the report with the same basename (`outputs/acme.json` beside `outputs/acme.html`): drill-down follow-ups and repeat searches read it back. Keep `outputs/` out of version control and public packages.
+
+The generator prints `warning:` lines to stderr and still writes the report. Treat them as bugs in the analysis JSON — fix and regenerate:
+
+- supplied `score` differs from the score derived from `dimensions`
+- `dimensions` missing or incomplete, so `score` is unchecked
+- no valid `signal_date` but `timing` above 2/5
 
 ## JSON schema
 
@@ -28,7 +36,7 @@ Fields are intentionally flat (`source_url`, `source_type`, `signal_date`, `pain
       "name": "Example Gym",
       "type": "Company",
       "stage": "Problem aware",
-      "score": 82,
+      "score": 90,
       "confidence": "Medium",
       "pain_signal": "The owner publicly described manually following up on overdue memberships.",
       "evidence": "A recent public post describes the workflow and time cost.",
@@ -38,7 +46,11 @@ Fields are intentionally flat (`source_url`, `source_type`, `signal_date`, `pain
       "source_url": "https://example.com/public-post",
       "source_type": "Public forum",
       "signal_date": "2026-07-01",
+      "checked_at": "2026-07-12",
+      "target_role": "Owner responsible for membership billing",
+      "role_basis": "inferred",
       "suggested_channel": "Reply to the public discussion",
+      "contact_url": "https://example.com/public-post",
       "opener": "Saw your question about failed-payment follow-up. We are testing a checklist for reducing manual payment chasing. Worth sending to whoever owns membership billing?",
       "caution": "Confirm the workflow is still active before pitching.",
       "dimensions": {
@@ -79,6 +91,13 @@ Fields are intentionally flat (`source_url`, `source_type`, `signal_date`, `pain
 Normal mode should contain up to ten qualified prospects. Every primary prospect must include a valid public source URL and a score from 0 to 100.
 
 Set `search_scope` to the sources actually searched, not the example above by default. When a locale playbook applied (see [locale-playbooks.md](locale-playbooks.md)), name the actual sources and language, e.g. `"Public Russian-language sources (Habr, VC.ru, hh.ru, Telegram), last 12 months"`.
+
+Optional prospect fields, all flat like the rest:
+
+- `score` — recomputed from `dimensions` when all five (0–5) are present, using the framework weights; the supplied value is only used as a fallback.
+- `checked_at` — `YYYY-MM-DD` you actually inspected the source, shown beside `signal_date`. A recent check does not refresh an old signal.
+- `target_role` and `role_basis` (`observed` or `inferred`) — the function to reach, never an invented named person.
+- `contact_url` — a public contact route you opened and judged suitable (thread, published business contact page, professional profile). Omit it when none was found, keep `reachability` at 1/5 or lower, and say so in `suggested_channel`. Only http(s) URLs render.
 
 Use `opener` for a short source-grounded message with a concrete manual CTA. Avoid vague CTAs such as "would this be useful?" when a sharper routing ask is available.
 

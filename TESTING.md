@@ -9,7 +9,7 @@ Run these after any change to `SKILL.md` or `references/*.md`, not just before a
 prompt-level regressions are easy to introduce and easy to miss without running the thing.
 
 Each scenario costs real time and tokens (`standard` mode runs ~10-15 minutes per the README) —
-budget for that rather than running all six on every tiny wording tweak. Scenario 1 alone is
+budget for that rather than running all eight on every tiny wording tweak. Scenario 1 alone is
 a reasonable smoke test for most changes; run the full set before publishing a release.
 
 ## 1. Baseline — English SaaS product, standard mode
@@ -99,6 +99,34 @@ Verify:
 
 - [ ] The shortlist is filtered to one primary ICP (not a mix of both sides scored together)
 - [ ] The adjacent side is mentioned under patterns/limits, not blended into the shortlist
+
+## 7. Counter-evidence and contact routes
+
+```text
+Find first customers for [any product URL] in quick mode.
+```
+
+Verify:
+
+- [ ] At least one `caution` cites something that cuts against the prospect (already-solved thread,
+      seller-not-buyer, missing capability) — or the report says none was found
+- [ ] No prospect names a decision-maker who isn't in the source; `target_role` shows observed/inferred
+- [ ] Every `contact_url` opens a real public page; prospects without one say so and score
+      reachability 1/5 or lower
+- [ ] Running the generator prints no `warning:` lines (or each one was fixed and regenerated)
+
+## 8. CSV export and repeat search
+
+```text
+... and also export the shortlist as a CSV.
+```
+
+Then, after the report: `Find more first customers for the same product — skip everyone from the last report.`
+
+Verify:
+
+- [ ] The CSV opens in a spreadsheet with readable non-ASCII text and no cell starting with a bare `=`, `+`, `-`, or `@`
+- [ ] The second run reads the earlier `outputs/*.json`, states how many entities were excluded, and returns none of them
 
 ## If something fails
 

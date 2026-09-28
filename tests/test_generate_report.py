@@ -253,6 +253,158 @@ class BuildHtmlTests(unittest.TestCase):
         self.assertNotIn('href="javascript:alert(1)"', html_out)
 
 
+FULL_DIMENSIONS = {
+    "pain_strength": 5,
+    "product_fit": 5,
+    "timing": 4,
+    "reachability": 4,
+    "evidence_quality": 4,
+}  # 25 + 25 + 16 + 12 + 12 = 90
+
+
+class DeriveScoreTests(unittest.TestCase):
+    def test_weights_sum_to_100(self):
+        self.assertEqual(sum(generate_report.WEIGHTS.values()), 100)
+
+    def test_all_fives_is_100_and_all_zeros_is_0(self):
+        self.assertEqual(generate_report.derive_score({"dimensions": {k: 5 for k in generate_report.WEIGHTS}}), 100)
+        self.assertEqual(generate_report.derive_score({"dimensions": {k: 0 for k in generate_report.WEIGHTS}}), 0)
+
+    def test_matches_framework_formula(self):
+        self.assertEqual(generate_report.derive_score({"dimensions": FULL_DIMENSIONS}), 90)
+
+    def test_rounds_half_up(self):
+        dims = {k: 0 for k in generate_report.WEIGHTS}
+        dims["timing"] = 2.5  # 10.0 exactly
+        dims["reachability"] = 0.5  # 1.5 -> 11.5 -> 12
+        self.assertEqual(generate_report.derive_score({"dimensions": dims}), 12)
+
+    def test_incomplete_or_invalid_dimensions_return_none(self):
+        self.assertIsNone(generate_report.derive_score({}))
+        self.assertIsNone(generate_report.derive_score({"dimensions": "x"}))
+        self.assertIsNone(generate_report.derive_score({"dimensions": {"pain_strength": 5}}))
+        bad = {**FULL_DIMENSIONS, "timing": "n/a"}
+        self.assertIsNone(generate_report.derive_score({"dimensions": bad}))
+        self.assertIsNone(generate_report.derive_score({"dimensions": {**FULL_DIMENSIONS, "timing": True}}))
+
+    def test_out_of_range_dimensions_are_clamped(self):
+        dims = {k: 99 for k in generate_report.WEIGHTS}
+        self.assertEqual(generate_report.derive_score({"dimensions": dims}), 100)
+
+    def test_apply_replaces_score_only_when_dimensions_complete(self):
+        data = {"prospects": [
+            {"name": "A", "score": 10, "dimensions": FULL_DIMENSIONS},
+            {"name": "B", "score": 77},
+        ]}
+        out = generate_report.apply_derived_scores(data)
+        self.assertEqual([p["score"] for p in out["prospects"]], [90, 77])
+        self.assertEqual(data["prospects"][0]["score"], 10)  # input not mutated
+
+
+class CollectWarningsTests(unittest.TestCase):
+    def test_flags_score_mismatch(self):
+        data = {"prospects": [{"name": "A", "score": 82, "dimensions": FULL_DIMENSIONS, "signal_date": "2026-07-01"}]}
+        warnings = generate_report.collect_warnings(data)
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("82", warnings[0])
+        self.assertIn("90", warnings[0])
+
+    def test_consistent_prospect_has_no_warnings(self):
+        data = {"prospects": [{"name": "A", "score": 90, "dimensions": FULL_DIMENSIONS, "signal_date": "2026-07-01"}]}
+        self.assertEqual(generate_report.collect_warnings(data), [])
+
+    def test_flags_incomplete_dimensions(self):
+        warnings = generate_report.collect_warnings({"prospects": [{"name": "A", "score": 70}]})
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("incomplete dimensions", warnings[0])
+
+    def test_flags_high_timing_without_signal_date(self):
+        data = {"prospects": [{"name": "A", "score": 90, "dimensions": FULL_DIMENSIONS}]}
+        warnings = generate_report.collect_warnings(data)
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("signal_date", warnings[0])
+
+    def test_low_timing_without_signal_date_is_fine(self):
+        dims = {**FULL_DIMENSIONS, "timing": 2}
+        score = generate_report.derive_score({"dimensions": dims})
+        data = {"prospects": [{"name": "A", "score": score, "dimensions": dims, "signal_date": "date unavailable"}]}
+        self.assertEqual(generate_report.collect_warnings(data), [])
+
+
+class CsvTests(unittest.TestCase):
+    def test_cell_neutralizes_formulas(self):
+        for value in ("=SUM(A1)", "+1", "-1", "@cmd", "  =x", "\tx", "\rx"):
+            self.assertTrue(generate_report.csv_cell(value).startswith("'"), value)
+
+    def test_cell_passes_normal_text_and_none(self):
+        self.assertEqual(generate_report.csv_cell("Acme"), "Acme")
+        self.assertEqual(generate_report.csv_cell(None), "")
+        self.assertEqual(generate_report.csv_cell(5), "5")
+
+    def _rows(self, data):
+        import csv as csv_module
+        import io as io_module
+        return list(csv_module.DictReader(io_module.StringIO(generate_report.build_csv(data))))
+
+    def test_header_only_for_empty_report(self):
+        text = generate_report.build_csv({"prospects": []})
+        self.assertEqual(text.strip().split(","), generate_report.CSV_COLUMNS)
+
+    def test_rows_use_derived_score_rank_and_dimensions(self):
+        rows = self._rows({"prospects": [
+            {"name": "A", "score": 1, "dimensions": FULL_DIMENSIONS, "source_url": "https://example.com/a"},
+            {"name": "B", "score": 50},
+        ]})
+        self.assertEqual([r["rank"] for r in rows], ["1", "2"])
+        self.assertEqual(rows[0]["score"], "90")
+        self.assertEqual(rows[0]["timing"], "4")
+        self.assertEqual(rows[1]["score"], "50")
+
+    def test_unsafe_urls_are_blanked_and_formulas_escaped(self):
+        rows = self._rows({"prospects": [{
+            "name": "=HYPERLINK(\"http://evil\")",
+            "source_url": "javascript:alert(1)",
+            "contact_url": "https://example.com/contact",
+        }]})
+        self.assertEqual(rows[0]["source_url"], "")
+        self.assertEqual(rows[0]["contact_url"], "https://example.com/contact")
+        self.assertTrue(rows[0]["name"].startswith("'="))
+
+    def test_rank_skips_malformed_entries_without_gaps(self):
+        rows = self._rows({"prospects": [{"name": "A"}, "junk", {"name": "B"}]})
+        self.assertEqual([r["rank"] for r in rows], ["1", "2"])
+
+    def test_multiline_and_comma_fields_round_trip(self):
+        rows = self._rows({"prospects": [{"name": "A", "opener": "Hi, there\nsecond line"}]})
+        self.assertEqual(rows[0]["opener"], "Hi, there\nsecond line")
+
+
+class NewFieldRenderTests(unittest.TestCase):
+    def _html(self, **prospect):
+        return generate_report.build_html({"generated_at": "2026-08-02", "prospects": [{"name": "Acme", "score": 70, **prospect}]})
+
+    def test_target_role_and_basis_rendered(self):
+        out = self._html(target_role="Head of billing", role_basis="inferred")
+        self.assertIn("Who: Head of billing (inferred)", out)
+
+    def test_contact_route_link_rendered_only_when_safe(self):
+        self.assertIn("Verified contact route", self._html(contact_url="https://example.com/contact"))
+        self.assertNotIn("Verified contact route", self._html(contact_url="javascript:alert(1)"))
+        self.assertNotIn("Verified contact route", self._html())
+
+    def test_checked_at_rendered_next_to_source_date(self):
+        self.assertIn("checked 2026-08-01", self._html(signal_date="2026-07-01", checked_at="2026-08-01"))
+
+    def test_top_prospect_and_average_follow_derived_scores(self):
+        data = {"generated_at": "2026-08-02", "prospects": [
+            {"name": "Inflated", "score": 99, "dimensions": {k: 1 for k in generate_report.WEIGHTS}},
+            {"name": "Honest", "score": 90, "dimensions": FULL_DIMENSIONS},
+        ]}
+        out = generate_report.build_html(data)
+        self.assertIn("<h2>Honest</h2>", out)
+        self.assertIn("55/100", out)  # (20 + 90) / 2
+
+
 class CliTests(unittest.TestCase):
     def _run_cli(self, input_path: Path, output_path: Path) -> subprocess.CompletedProcess:
         return subprocess.run(
@@ -293,6 +445,41 @@ class CliTests(unittest.TestCase):
             result = self._run_cli(input_path, output_path)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertTrue(output_path.exists())
+
+
+    def test_csv_flag_writes_bom_prefixed_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            input_path = Path(tmp) / "analysis.json"
+            output_path = Path(tmp) / "report.html"
+            csv_path = Path(tmp) / "out" / "prospects.csv"
+            input_path.write_text(json.dumps({"prospects": [{"name": "Привет", "score": 60}]}), encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(MODULE_PATH), str(input_path), str(output_path), "--csv", str(csv_path)],
+                capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            raw = csv_path.read_bytes()
+            self.assertTrue(raw.startswith(b"\xef\xbb\xbf"))
+            self.assertIn("Привет", raw.decode("utf-8-sig"))
+
+    def test_no_csv_written_without_flag(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            input_path = Path(tmp) / "analysis.json"
+            input_path.write_text(json.dumps({"title": "x"}))
+            self._run_cli(input_path, Path(tmp) / "report.html")
+            self.assertEqual([p.name for p in Path(tmp).iterdir() if p.suffix == ".csv"], [])
+
+    def test_warnings_go_to_stderr_but_do_not_fail(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            input_path = Path(tmp) / "analysis.json"
+            output_path = Path(tmp) / "report.html"
+            input_path.write_text(json.dumps({"prospects": [
+                {"name": "A", "score": 82, "dimensions": FULL_DIMENSIONS, "signal_date": "2026-07-01"}
+            ]}))
+            result = self._run_cli(input_path, output_path)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("warning:", result.stderr)
+            self.assertIn("90", output_path.read_text())
 
 
 if __name__ == "__main__":

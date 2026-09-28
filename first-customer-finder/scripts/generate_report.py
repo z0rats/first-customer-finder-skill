@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Generate a standalone First Customer Finder HTML report from JSON."""
+"""Generate a standalone First Customer Finder HTML report (and optional CSV) from JSON."""
 
 from __future__ import annotations
 
 import argparse
+import csv
 import html
+import io
 import json
+import sys
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -21,6 +24,25 @@ DIMENSIONS = {
     "reachability": "Reachability",
     "evidence_quality": "Evidence quality",
 }
+
+# Percentage weights from references/research-framework.md; they sum to 100.
+WEIGHTS = {
+    "pain_strength": 25,
+    "product_fit": 25,
+    "timing": 20,
+    "reachability": 15,
+    "evidence_quality": 15,
+}
+
+# Undated evidence cannot support a strong timing score (research-framework.md).
+UNDATED_TIMING_CAP = 2
+
+CSV_COLUMNS = [
+    "rank", "name", "type", "stage", "score", "confidence", "target_role", "role_basis",
+    "contact_url", "suggested_channel", "pain_signal", "evidence", "why_fit", "why_now",
+    "source_title", "source_url", "source_type", "signal_date", "checked_at",
+    "opener", "caution", *DIMENSIONS,
+]
 
 TOOLBAR_STYLES = """
 .toolbar{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);padding:16px;margin-bottom:16px}
@@ -160,6 +182,93 @@ def is_stale(signal_date: Any, generated_at: Any) -> bool:
     return (generated - signal).days > STALE_THRESHOLD_DAYS
 
 
+def dimension_value(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return max(0.0, min(5.0, number)) if number == number else None
+
+
+def derive_score(prospect: dict[str, Any]) -> int | None:
+    """Weighted 0-100 score from the five 0-5 dimensions, or None if any is missing."""
+    dimensions = prospect.get("dimensions")
+    if not isinstance(dimensions, dict):
+        return None
+    total = 0.0
+    for key, weight in WEIGHTS.items():
+        value = dimension_value(dimensions.get(key))
+        if value is None:
+            return None
+        total += value / 5 * weight
+    return int(total + 0.5)
+
+
+def apply_derived_scores(data: dict[str, Any]) -> dict[str, Any]:
+    """Return a copy of the report whose prospect scores follow their dimensions.
+
+    A model-written `score` can silently disagree with its own breakdown, so the
+    dimensions win whenever all five are present. Otherwise `score` is kept as given.
+    """
+    prospects = []
+    for prospect in items(data.get("prospects")):
+        if isinstance(prospect, dict):
+            derived = derive_score(prospect)
+            if derived is not None:
+                prospect = {**prospect, "score": derived}
+        prospects.append(prospect)
+    return {**data, "prospects": prospects}
+
+
+def collect_warnings(data: dict[str, Any]) -> list[str]:
+    warnings = []
+    for index, prospect in enumerate(items(data.get("prospects")), 1):
+        if not isinstance(prospect, dict):
+            continue
+        label = str(prospect.get("name") or f"Prospect {index}")
+        derived = derive_score(prospect)
+        if derived is None:
+            warnings.append(f"{label}: incomplete dimensions, using the supplied score unchecked")
+            continue
+        if "score" in prospect and clamp(prospect.get("score")) != derived:
+            warnings.append(
+                f"{label}: supplied score {clamp(prospect.get('score'))} replaced by {derived} derived from dimensions"
+            )
+        timing = dimension_value(prospect["dimensions"].get("timing"))
+        if parse_date(prospect.get("signal_date")) is None and timing is not None and timing > UNDATED_TIMING_CAP:
+            warnings.append(
+                f"{label}: no valid signal_date but timing is {timing:g}/5 (undated evidence should be <= {UNDATED_TIMING_CAP})"
+            )
+    return warnings
+
+
+def csv_cell(value: Any) -> str:
+    """Neutralize spreadsheet formulas: apps may execute them even inside quoted CSV fields."""
+    text = "" if value is None else str(value)
+    if text.lstrip().startswith(("=", "+", "-", "@")) or text.startswith(("\t", "\r", "\n")):
+        return "'" + text
+    return text
+
+
+def build_csv(data: dict[str, Any]) -> str:
+    rows = []
+    shortlist = [x for x in items(apply_derived_scores(data).get("prospects")) if isinstance(x, dict)]
+    for index, prospect in enumerate(shortlist, 1):
+        dimensions = prospect.get("dimensions") if isinstance(prospect.get("dimensions"), dict) else {}
+        row = {**prospect, **{key: dimensions.get(key) for key in DIMENSIONS}, "rank": index}
+        for key in ("source_url", "contact_url"):
+            if safe_url(row.get(key)) == "#":
+                row[key] = ""
+        rows.append([csv_cell(row.get(column)) for column in CSV_COLUMNS])
+    out = io.StringIO()
+    writer = csv.writer(out, lineterminator="\n")
+    writer.writerow(CSV_COLUMNS)
+    writer.writerows(rows)
+    return out.getvalue()
+
+
 def render_dimensions(data: dict[str, Any]) -> str:
     rows = []
     for key, label in DIMENSIONS.items():
@@ -196,6 +305,17 @@ def render_prospect(prospect: dict[str, Any], index: int, generated_at: Any) -> 
         if is_stale(prospect.get("signal_date"), generated_at)
         else ""
     )
+    role = str(prospect.get("target_role") or "").strip()
+    basis = str(prospect.get("role_basis") or "").strip()
+    who_html = f'<p>Who: {esc(role)}{f" ({esc(basis)})" if basis else ""}</p>' if role else ""
+    contact = safe_url(prospect.get("contact_url"))
+    contact_html = (
+        f'<p><a href="{contact}" target="_blank" rel="noreferrer">Verified contact route ↗</a></p>'
+        if contact != "#"
+        else ""
+    )
+    checked = str(prospect.get("checked_at") or "").strip()
+    checked_html = f" · checked {esc(checked)}" if checked else ""
     return f"""
     <article class="prospect reveal" data-score="{score}" data-stage="{stage}" data-source="{source_type}" data-name="{name}">
       <header class="prospect-head">
@@ -213,13 +333,13 @@ def render_prospect(prospect: dict[str, Any], index: int, generated_at: Any) -> 
       <div class="prospect-grid">
         <div><span>Why it fits</span><p>{esc(prospect.get('why_fit', ''))}</p></div>
         <div><span>Why now</span><p>{esc(prospect.get('why_now', ''))}</p></div>
-        <div><span>Suggested channel</span><p>{esc(prospect.get('suggested_channel', ''))}</p></div>
+        <div><span>Suggested channel</span><p>{esc(prospect.get('suggested_channel', ''))}</p>{who_html}{contact_html}</div>
         <div><span>Caution</span><p>{esc(prospect.get('caution', 'Confirm current relevance before outreach.'))}</p></div>
       </div>
       <blockquote><span>Suggested opener</span>{esc(prospect.get('opener', ''))}</blockquote>
       <details>
         <summary>Evidence and score breakdown</summary>
-        <div class="evidence"><div><span>Evidence</span><p>{esc(prospect.get('evidence', ''))}</p></div><div><span>Source</span><p>{source_type} · {esc(prospect.get('signal_date', 'Date unavailable'))}</p><a href="{source}" target="_blank" rel="noreferrer">{esc(prospect.get('source_title', 'Open original source'))} ↗</a></div></div>
+        <div class="evidence"><div><span>Evidence</span><p>{esc(prospect.get('evidence', ''))}</p></div><div><span>Source</span><p>{source_type} · {esc(prospect.get('signal_date', 'Date unavailable'))}{checked_html}</p><a href="{source}" target="_blank" rel="noreferrer">{esc(prospect.get('source_title', 'Open original source'))} ↗</a></div></div>
         <div class="metrics">{render_dimensions(prospect.get('dimensions') if isinstance(prospect.get('dimensions'), dict) else {})}</div>
       </details>
     </article>"""
@@ -238,6 +358,7 @@ def render_rejected(rejected: list[dict[str, Any]]) -> str:
 
 
 def build_html(data: dict[str, Any]) -> str:
+    data = apply_derived_scores(data)
     prospects = [x for x in items(data.get("prospects")) if isinstance(x, dict)]
     patterns = [x for x in items(data.get("patterns")) if isinstance(x, dict)]
     rejected = [x for x in items(data.get("rejected")) if isinstance(x, dict)]
@@ -320,6 +441,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input", type=Path, help="Path to report JSON")
     parser.add_argument("output", type=Path, help="Path to output HTML")
+    parser.add_argument("--csv", type=Path, help="Also write a spreadsheet-safe CSV of the shortlist")
     args = parser.parse_args()
 
     with args.input.open("r", encoding="utf-8") as handle:
@@ -327,9 +449,19 @@ def main() -> None:
     if not isinstance(data, dict):
         raise SystemExit("Input JSON must contain an object at the top level.")
 
+    for warning in collect_warnings(data):
+        print(f"warning: {warning}", file=sys.stderr)
+
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(build_html(data), encoding="utf-8")
     print(f"Created report: {args.output.resolve()}")
+    if args.csv:
+        args.csv.parent.mkdir(parents=True, exist_ok=True)
+        # BOM so Excel opens Cyrillic and other non-ASCII text correctly. open() rather than
+        # Path.write_text(newline=...), which needs Python 3.10 and macOS ships 3.9.
+        with args.csv.open("w", encoding="utf-8-sig", newline="") as handle:
+            handle.write(build_csv(data))
+        print(f"Created CSV: {args.csv.resolve()}")
 
 
 if __name__ == "__main__":

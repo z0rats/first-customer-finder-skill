@@ -1,6 +1,6 @@
 ---
 name: first-customer-finder
-description: Find and qualify evidence-backed potential first customers, early adopters, design partners, or beta users for a startup using recent public pain and buying signals. Use when analyzing a product URL or idea, defining an ideal customer profile, researching public discussions and business pages, identifying first-user prospects, ranking lead fit and timing, preparing source-based outreach drafts, or creating a shareable early-customer prospecting report without sending messages automatically.
+description: Find and qualify evidence-backed potential first customers, early adopters, design partners, or beta users for a startup using recent public pain and buying signals. Use when analyzing a product URL or idea, defining an ideal customer profile, researching public discussions and business pages, identifying first-user prospects, ranking lead fit and timing, preparing source-based outreach drafts, or creating a shareable early-customer prospecting report without sending messages automatically. Trigger on requests like "find my first customers", "who would buy this", "find early adopters", "find design partners", "find beta users", or "find leads for my startup", or when given a product URL and asked who might use or pay for it.
 ---
 
 # First Customer Finder
@@ -32,6 +32,8 @@ Search current public sources for:
 
 Use the query buckets and source mix from the applicable locale playbook when one applies; otherwise use the base buckets above with general web search. When subagent delegation is available, run each query bucket as its own parallel research subagent — one bucket per agent, each returning candidate signals with source URLs, dates, and a summary close to the original wording. Give every agent the product brief and ICP so it can reject weak matches at the source, and instruct it to fetch and quote what it cites; an agent may not return a URL it did not open. Work the buckets sequentially instead if the environment has no subagent support. Prefer original pages over search snippets. Record the source URL, source type, publication date when visible, and the exact evidence supporting qualification.
 
+Search engines are discovery aids, not evidence. This skill needs working web search or browsing; if neither is available, say so and stop instead of producing leads from memory. Never imply every platform was searched — the report's `search_scope` names only the sources actually covered.
+
 ### 3. Research safely
 
 - Use public, intentionally shared professional or business information only.
@@ -43,9 +45,9 @@ Use the query buckets and source mix from the applicable locale playbook when on
 
 ### 4. Verify before you qualify
 
-Fetch the original page for every candidate signal before it can enter the shortlist. A search snippet, an aggregator summary, or a subagent's unquoted paraphrase is not evidence. Confirm the page exists, the signal says what was claimed, and the date. Drop anything that fails this check.
+Fetch the original page for every candidate signal before it can enter the shortlist. A search snippet, an aggregator summary, or a subagent's unquoted paraphrase is not evidence. Confirm the page exists, the signal says what was claimed, and the date. Drop anything that fails this check. Record the date the signal was published (`signal_date`) separately from the date you inspected it (`checked_at`) — checking an old post today does not make its demand new. Attribute the signal to its actual author or company; if the author is anonymous or ambiguous, lower confidence rather than assuming.
 
-Some high-value sources block server-side fetching (e.g., Reddit, G2/TrustRadius, Cloudflare-fronted job boards). Do not drop a candidate for that reason alone — verify through an alternate legitimate route instead: a browser session, an official API (e.g., HN Algolia for Hacker News), or the site's RSS feed. Third-party archives can run months stale, so prefer the live page and note which route confirmed it. When a subagent already fetched and quoted a source, spot-check its work, and always re-verify the top three prospects yourself before they reach the report.
+Some high-value sources block server-side fetching (e.g., Reddit, G2/TrustRadius, Cloudflare-fronted job boards). Do not drop a candidate for that reason alone — verify through an alternate legitimate route instead: a browser session, an official API (e.g., HN Algolia for Hacker News), or the site's RSS feed. Third-party archives can run months stale, so prefer the live page and note which route confirmed it. When a subagent already fetched and quoted a source, spot-check its work, and always re-verify the top three prospects yourself before they reach the report. A source that stays blocked or snippet-only after every legitimate route stays out of the qualified shortlist; mention the coverage gap in `limits`.
 
 ### 5. Qualify and deduplicate
 
@@ -61,14 +63,16 @@ Score each prospect using the bundled framework:
 
 Then assign a `confidence` level (High/Medium/Low, see `research-framework.md`) — it is a separate axis from the score, not a substitute for it.
 
+Before a prospect is final, look for evidence against it: the problem was already solved in the replies, the author is selling a solution rather than looking for one, the product lacks a capability the author needs, or the buyer falls outside the requested profile. Put material counter-evidence in `caution` or drop the candidate — a high score never overrides contradictory evidence. The generator recomputes `score` from `dimensions`, so keep the five dimension values honest rather than tuning `score`.
+
 Remove weak matches. A prospect without a cited pain, need, or timing signal is only a speculative fit and must not appear in the primary shortlist. Keep a short note of any candidate that was seriously considered but didn't qualify, with a one-line reason — it feeds the report's near-miss list.
 
 Never claim that a prospect is interested, has consented, or will buy. Label the output "potential customer based on public signals."
 
 ### 6. Draft outreach, never send it
 
-- Recommend the most natural public or professional channel already associated with the source. Prefer concrete official/public routes such as a company form, public business email, relevant public thread, or professional profile. If no direct public route is found, say so instead of guessing.
-- Identify the likely target role or function, not just the company name.
+- Recommend the most natural public or professional channel already associated with the source. Prefer concrete official/public routes such as a company form, public business email, relevant public thread, or professional profile. If no direct public route is found, say so instead of guessing an email, URL path, or permission to contact; give a manual research step instead, and keep reachability at 1/5 or lower. A visible reply box or form is not permission to promote — check the community's or site's rules first.
+- Identify the likely target role or function, not just the company name, and label it observed (stated in the source) or inferred. Never invent a named decision-maker.
 - Translate the product into the buyer's problem language. Do not lead with implementation-layer terms unless the source proves that audience already cares about them.
 - Make the next step concrete enough to accept, reject, or forward, such as a scenario, teardown, worksheet, checklist, benchmark, mockup, or sandbox walkthrough.
 - Write one short opener grounded only in the cited public context.
@@ -92,11 +96,15 @@ Lead with the most actionable evidence. Use this order:
 
 Create a standalone HTML report unless the user explicitly requests chat-only output:
 
-1. Write structured JSON using `references/report-artifact.md`.
+1. Write structured JSON using `references/report-artifact.md`, saved next to the report with the same basename (e.g. `outputs/acme.json` beside `outputs/acme.html`) — drill-downs and repeat searches read it back.
 2. Run `python3 scripts/generate_report.py <analysis.json> <report.html>`.
 3. Save the report in the workspace `outputs/` directory (create it if missing).
 4. Verify prospect cards, source links, scores, concrete contact routes, CTAs, patterns, outreach plan, and limitations.
 5. Return a clickable absolute file link (`file://...`) in the final response, or publish it as an Artifact if the user is working in an environment that supports that.
+6. If the user wants the shortlist in a spreadsheet or CRM, add `--csv <prospects.csv>` to the same command. The export sends nothing and syncs nothing.
+7. Read any generator `warning:` lines (score/dimension mismatch, undated evidence with a high timing score) and fix the analysis JSON instead of ignoring them.
+
+Keep the chat handoff short — the detail lives in the report. Close by inviting brief feedback by rank, e.g. "tell me which ranks fit and which don't, and any general preference (say, avoid enterprise buyers)." Do not delay the first report waiting for it.
 
 ## Modes
 
@@ -112,6 +120,10 @@ Use `standard` by default. State the mode explicitly in the request, e.g. "find 
 ## Follow-up requests
 
 After delivering a report, the user may ask to go deeper on one prospect ("expand on prospect 3", "dig into Example Gym") instead of rerunning the whole pipeline. Treat this as a scoped re-entry into steps 2–6 for that single entity only: run a focused search plan, verify any new signal per step 4, and update its score, confidence, and evidence rather than starting over. Regenerate the same report file (same `outputs/` path) with the enriched entry merged in, so the link the user already has stays valid, and state in the response which prospect was updated and what changed.
+
+## Repeat searches
+
+When the user asks for more or different prospects for the same product, read the analysis JSON files from earlier runs in the workspace `outputs/` folder (for that product only — never another product's), treat every entity in them as an exclusion list per step 1, and say how many were excluded. Apply stated feedback as a visible criteria change ("avoiding enterprise buyers now"), and tell the user what changed before searching again. One rejected company is not a rule against its whole industry; ask if the distinction matters. Only record a prospect as contacted, replied, or a customer when the user says so — drafting an opener is not contacting.
 
 ## Gotchas
 

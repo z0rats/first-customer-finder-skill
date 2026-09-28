@@ -53,6 +53,7 @@ function defaultSkillsDir() {
 function copyDirectory(source, destination) {
   fs.mkdirSync(destination, { recursive: true });
   for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
+    if (entry.name === "__pycache__" || entry.name.endsWith(".pyc")) continue;
     const sourcePath = path.join(source, entry.name);
     const destinationPath = path.join(destination, entry.name);
     if (entry.isDirectory()) copyDirectory(sourcePath, destinationPath);
@@ -73,8 +74,42 @@ function main() {
   if (!fs.existsSync(source)) throw new Error(`Cannot find bundled skill at ${source}`);
 
   fs.mkdirSync(skillsDir, { recursive: true });
-  fs.rmSync(destination, { recursive: true, force: true });
-  copyDirectory(source, destination);
+  let destinationStat;
+  try {
+    destinationStat = fs.lstatSync(destination);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  if (destinationStat && destinationStat.isSymbolicLink()) {
+    throw new Error(`${destination} is a symlink (a development checkout?). Update its source instead of overwriting it.`);
+  }
+
+  // Copy into a staging directory first so a failed copy never leaves a half-installed skill.
+  // The previous install waits in the same directory until the swap succeeds.
+  const stagingRoot = fs.mkdtempSync(path.join(skillsDir, ".first-customer-finder-stage-"));
+  let keepStaging = false;
+  try {
+    const staged = path.join(stagingRoot, "new");
+    const previous = path.join(stagingRoot, "previous");
+    copyDirectory(source, staged);
+    if (destinationStat) fs.renameSync(destination, previous);
+    try {
+      fs.renameSync(staged, destination);
+    } catch (error) {
+      if (destinationStat && !fs.existsSync(destination)) {
+        try {
+          fs.renameSync(previous, destination);
+        } catch (restoreError) {
+          // Never delete the only remaining copy of the old install.
+          keepStaging = true;
+          throw new Error(`${error.message}. The previous install could not be restored and was kept at ${previous}`);
+        }
+      }
+      throw error;
+    }
+  } finally {
+    if (!keepStaging) fs.rmSync(stagingRoot, { recursive: true, force: true });
+  }
 
   console.log("Installed first-customer-finder skill.");
   console.log(`Location: ${destination}`);
