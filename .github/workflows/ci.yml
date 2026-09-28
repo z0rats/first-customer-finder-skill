@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / py${{ matrix.python }} / node${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 3.9 is what macOS ships, and generate_report.py must keep working there.
+          # jsdom 30 needs Node >=22.22 (or >=24.15), so older Node lines are not tested.
+          - { os: ubuntu-latest, python: "3.9", node: "22" }
+          - { os: ubuntu-latest, python: "3.14", node: "24" }
+          - { os: ubuntu-latest, python: "3.14", node: "26" }
+          - { os: macos-latest, python: "3.9", node: "24" }
+          - { os: macos-latest, python: "3.14", node: "26" }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm test

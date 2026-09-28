@@ -127,14 +127,26 @@ Prospects are hypotheses based on public signals, not confirmed customers or gua
 
 ## Development
 
-`scripts/generate_report.py` has no third-party dependencies, and neither do its tests. The installer is covered by Node's built-in test runner. Run everything with:
+`scripts/generate_report.py` and the installer have no runtime dependencies. The only dev dependency is `jsdom`, used to run the report's filter script in a fake browser. Install it once, then run everything:
 
 ```bash
+npm ci
 npm test
 # or separately:
 python3 -m unittest discover -s tests
-node --test tests/install.test.js
+node --test tests/install.test.js tests/package.test.js tests/report-filters.test.js
 ```
+
+What the tests cover:
+
+- `tests/test_generate_report.py` — unit tests for the generator's helpers (scoring, escaping, CSV, staleness).
+- `tests/test_cli.py` — runs the generator as a command against `tests/fixtures/sample_report.json`, and checks that the JSON example in `report-artifact.md` still generates cleanly.
+- `tests/test_skill_structure.py` — `SKILL.md` frontmatter, relative links, and that the versions and URLs in `package.json` and `.claude-plugin/` agree.
+- `tests/install.test.js` — the installer, including default paths, `~` expansion, and refusing to overwrite a symlink.
+- `tests/package.test.js` — what `npm pack` would publish (and that tests and `outputs/` stay out).
+- `tests/report-filters.test.js` — the report's search, filter, sort, and reset behavior, plus a script-injection check.
+
+GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs `npm test` on every push to `main` and every pull request, on Linux and macOS with Python 3.9 (the macOS system version) and 3.14 and Node 22, 24, and 26.
 
 The `SKILL.md` workflow itself isn't covered by automated tests — it's a behavior spec, not code. Validate changes to it by running the golden scenarios in [TESTING.md](TESTING.md) against a real Claude Code session.
 

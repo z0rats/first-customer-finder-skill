@@ -61,3 +61,65 @@ test("refuses to overwrite a symlinked installation", (t) => {
   assert.ok(fs.lstatSync(path.join(skillsDir, "first-customer-finder")).isSymbolicLink());
   assert.deepEqual(fs.readdirSync(checkout), []);
 });
+
+function run(args, env = {}) {
+  return spawnSync(process.execPath, [INSTALLER, ...args], {
+    encoding: "utf8",
+    env: { ...process.env, ...env },
+  });
+}
+
+test("--help prints usage and installs nothing", (t) => {
+  const home = tempDir(t);
+  const result = run(["--help"], { HOME: home, USERPROFILE: home, CLAUDE_CONFIG_DIR: "" });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Usage:/);
+  assert.deepEqual(fs.readdirSync(home), []);
+});
+
+test("rejects unknown options and a missing --skills-dir value", () => {
+  const unknown = run(["--nope"]);
+  assert.notEqual(unknown.status, 0);
+  assert.match(unknown.stderr, /Unknown option: --nope/);
+
+  const missing = run(["--skills-dir"]);
+  assert.notEqual(missing.status, 0);
+  assert.match(missing.stderr, /--skills-dir requires a value/);
+});
+
+test("installs the complete skill tree, script included", (t) => {
+  const skillsDir = path.join(tempDir(t), "skills");
+  assert.equal(install(skillsDir).status, 0);
+  const dest = path.join(skillsDir, "first-customer-finder");
+  for (const file of [
+    "SKILL.md",
+    "references/research-framework.md",
+    "references/report-artifact.md",
+    "references/locale-playbooks.md",
+    "scripts/generate_report.py",
+  ]) {
+    assert.ok(fs.existsSync(path.join(dest, file)), `${file} missing from install`);
+  }
+});
+
+test("defaults to $CLAUDE_CONFIG_DIR/skills when set", (t) => {
+  const home = tempDir(t);
+  const config = path.join(home, "custom-claude");
+  const result = run([], { HOME: home, USERPROFILE: home, CLAUDE_CONFIG_DIR: config });
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(fs.existsSync(path.join(config, "skills", "first-customer-finder", "SKILL.md")));
+});
+
+test("defaults to ~/.claude/skills without CLAUDE_CONFIG_DIR", (t) => {
+  const home = tempDir(t);
+  const result = run([], { HOME: home, USERPROFILE: home, CLAUDE_CONFIG_DIR: "" });
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(fs.existsSync(path.join(home, ".claude", "skills", "first-customer-finder", "SKILL.md")));
+});
+
+test("expands a leading ~ in --skills-dir", (t) => {
+  const home = tempDir(t);
+  const result = run(["--skills-dir", "~/my-skills"], { HOME: home, USERPROFILE: home });
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(fs.existsSync(path.join(home, "my-skills", "first-customer-finder", "SKILL.md")));
+});
