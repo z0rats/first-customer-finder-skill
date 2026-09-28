@@ -16,7 +16,7 @@
     "first-customer-finder-skill": "scripts/install.js"
   },
   "scripts": {
-    "test": "python3 -m unittest discover -s tests && node --test tests/install.test.js",
+    "test": "python3 -m unittest discover -s tests && node --test tests/install.test.js tests/package.test.js tests/report-filters.test.js",
     "prepublishOnly": "npm test"
   },
   "files": [
@@ -41,5 +41,8 @@
   ],
   "publishConfig": {
     "access": "public"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.1"
   }
 }

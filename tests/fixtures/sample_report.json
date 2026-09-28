@@ -1,0 +1,79 @@
+{
+  "title": "Sample Report",
+  "product": "Example product",
+  "product_url": "https://example.com",
+  "target_customer": "Independent gym owners",
+  "search_scope": "Public sources, last 12 months",
+  "generated_at": "2026-07-12",
+  "verdict": "Owners chasing failed payments by hand are the strongest early demand.",
+  "prospects": [
+    {
+      "name": "Acme Gym",
+      "type": "Company",
+      "stage": "High intent",
+      "confidence": "High",
+      "pain_signal": "The owner asked how others handle failed membership payments.",
+      "evidence": "A public post describes the workflow and its time cost.",
+      "why_fit": "The product automates the reminder step.",
+      "why_now": "The post is two weeks old.",
+      "source_title": "How do you handle failed payments?",
+      "source_url": "https://example.com/public-post",
+      "source_type": "Public forum",
+      "signal_date": "2026-06-28",
+      "checked_at": "2026-07-12",
+      "target_role": "Owner responsible for billing",
+      "role_basis": "inferred",
+      "suggested_channel": "Reply to the public discussion",
+      "contact_url": "https://example.com/public-post",
+      "opener": "Saw your question about failed-payment follow-up. Worth sending to whoever owns billing?",
+      "caution": "Confirm the workflow is still active.",
+      "dimensions": {"pain_strength": 5, "product_fit": 5, "timing": 4, "reachability": 4, "evidence_quality": 4}
+    },
+    {
+      "name": "Клуб «Ритм»",
+      "type": "Company",
+      "stage": "Problem aware",
+      "confidence": "Low",
+      "pain_signal": "Вакансия администратора описывает ручное напоминание об оплате абонементов.",
+      "evidence": "Публичная вакансия на hh.ru.",
+      "why_fit": "Продукт закрывает именно этот шаг.",
+      "why_now": "Вакансия открыта.",
+      "source_title": "Администратор фитнес-клуба",
+      "source_url": "https://example.com/vacancy",
+      "source_type": "Job posting",
+      "signal_date": "2025-01-10",
+      "suggested_channel": "Написать через страницу компании",
+      "opener": "Увидели вашу вакансию — подскажите, кто отвечает за оплаты?",
+      "caution": "Сигнал старый, уточните актуальность.",
+      "dimensions": {"pain_strength": 4, "product_fit": 4, "timing": 3, "reachability": 3, "evidence_quality": 3}
+    },
+    {
+      "name": "Beta Studio",
+      "type": "Company",
+      "stage": "Trigger present",
+      "pain_signal": "Recently opened a second location.",
+      "evidence": "Announcement on the studio's public page.",
+      "why_fit": "More locations mean more billing work.",
+      "why_now": "Opened this month.",
+      "source_title": "We're expanding",
+      "source_url": "javascript:alert(1)",
+      "source_type": "Public forum",
+      "signal_date": "2026-07-01",
+      "opener": "Congrats on the new location.",
+      "dimensions": {"pain_strength": 2, "product_fit": 3, "timing": 2, "reachability": 1, "evidence_quality": 2}
+    }
+  ],
+  "patterns": [
+    {"title": "Manual follow-up", "count": 3, "insight": "Owners rely on spreadsheets after payments fail."}
+  ],
+  "rejected": [
+    {"name": "Other Gym Co", "reason": "The posting account looked like a bot."}
+  ],
+  "outreach_plan": {
+    "angle": "Offer a concierge test first.",
+    "first_step": "Contact the top prospect with one source-based question.",
+    "follow_up": "Share a mockup only after they confirm the pain.",
+    "success": "Three conversations in seven days."
+  },
+  "limits": ["Potential customers inferred from public signals, not confirmed buyers."]
+}
